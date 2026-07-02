@@ -1,0 +1,2769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard GBM – Grupo Progestion</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root{
+  --bg:#f5f5f7;--s1:#ffffff;--s2:#f5f5f7;--tx:#1d1d1f;--mu:#6e6e73;--bd:rgba(0,0,0,0.08);
+  --bl:#0071e3;--bll:#0077ed;--bld:#e8f0fe;--gn:#34c759;--yw:#ff9f0a;--rd:#ff3b30;
+  --sh:0 2px 12px rgba(0,0,0,0.06);--sh2:0 4px 20px rgba(0,0,0,0.09);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased;}
+.hdr{background:#fff;padding:14px 28px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.hdr h1{font-size:1.1rem;font-weight:600;color:var(--tx);letter-spacing:-.01em;}
+.hdr p{color:var(--mu);font-size:.75rem;margin-top:2px;font-weight:400;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;font-size:.7rem;font-weight:600;}
+.badge.green{background:#d1f5dc;color:#1a7f3c;}.badge.yellow{background:#fff3d1;color:#a05c00;}.badge.red{background:#ffd6d4;color:#c41a1a;}.badge.grey{background:#e8e8ed;color:#48484a;}
+.badge-gen{background:#f5f5f7;border:1px solid var(--bd);border-radius:8px;padding:4px 12px;font-size:.71rem;color:var(--mu);font-weight:400;}
+.alert{background:linear-gradient(90deg,#fff1f0,#ffe4e4);border-left:3px solid var(--rd);padding:10px 24px;font-size:.83rem;display:none;color:#c41a1a;}
+.alert.show{display:flex;align-items:center;gap:8px;}
+.tab-nav{background:#fff;border-bottom:1px solid var(--bd);display:flex;padding:0 24px;overflow-x:auto;}
+.tab-btn{background:none;border:none;color:var(--mu);padding:14px 20px;font-size:.84rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s;}
+.tab-btn:hover{color:var(--tx);}
+.tab-btn.active{color:var(--bl);border-bottom-color:var(--bl);font-weight:600;}
+.tab-panel{display:none;padding:24px 28px;}.tab-panel.active{display:block;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+@media(max-width:1200px){.g6{grid-template-columns:repeat(3,1fr);}.g5{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr);}.g3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.g2,.g3,.g4,.g5,.g6{grid-template-columns:1fr;}}
+.gap{margin-bottom:20px;}
+.st{font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.st::after{content:'';flex:1;height:1px;background:var(--bd);}
+.card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:18px;box-shadow:var(--sh);}
+.card.cl-green{border-left:3px solid var(--gn);}.card.cl-yellow{border-left:3px solid var(--yw);}.card.cl-red{border-left:3px solid var(--rd);}.card.cl-blue{border-left:3px solid var(--bl);}.card.cl-grey{border-left:3px solid #aeaeb2;}
+.lbl{font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);margin-bottom:7px;font-weight:500;}
+.val{font-size:1.75rem;font-weight:700;line-height:1;color:var(--tx);letter-spacing:-.02em;}
+.meta{font-size:.73rem;color:var(--mu);margin-top:5px;}
+.kpi-card{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;box-shadow:var(--sh);}
+.kpi-card-top{padding:14px 16px 10px;border-bottom:1px solid var(--bd);}
+.kpi-card-bot{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;}
+.kpi-n{font-size:.63rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;}
+.kpi-name{font-size:.82rem;font-weight:600;line-height:1.35;margin-bottom:10px;color:var(--tx);}
+.kpi-vals{display:flex;gap:16px;align-items:flex-end;}
+.kpi-real{font-size:1.6rem;font-weight:700;line-height:1;letter-spacing:-.02em;}
+.kpi-sep{font-size:.8rem;color:var(--mu);}
+.kpi-obj{font-size:.95rem;font-weight:600;color:var(--mu);}
+.kpi-obj small{font-size:.63rem;display:block;text-align:right;}
+.pt-k{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;text-align:center;box-shadow:var(--sh);}
+.pt-k.hl{background:linear-gradient(135deg,#e8f4fd,#f0f8ff);border-color:#b3d9f7;}
+.pt-k .val{font-size:1.35rem;color:var(--bl);}.pt-k.hl .val{color:var(--bl);font-size:1.5rem;}
+.pt-k .sub{font-size:.67rem;color:var(--mu);margin-top:3px;}
+.pb{height:5px;background:#e5e5ea;border-radius:99px;overflow:hidden;margin-top:6px;}
+.pb-f{height:100%;border-radius:99px;transition:width .5s;}
+.pb-f.green{background:var(--gn);}.pb-f.yellow{background:var(--yw);}.pb-f.red{background:var(--rd);}
+.tw{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden;box-shadow:var(--sh);}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem;}
+.tbl th{text-align:left;padding:10px 14px;background:#f5f5f7;color:var(--mu);font-size:.66rem;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--bd);vertical-align:middle;color:var(--tx);}
+.tbl tr:last-child td{border-bottom:none;}.tbl tr:hover td{background:#fafafa;}
+.tbl td.r,.tbl th.r{text-align:right;font-variant-numeric:tabular-nums;}
+.cc{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:18px;box-shadow:var(--sh);}
+.ct{font-size:.82rem;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;color:var(--tx);}
+.sel{background:#fff;border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 12px;font-size:.82rem;cursor:pointer;-webkit-appearance:none;appearance:none;font-family:inherit;}
+.filter-bar{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:14px 18px;margin-bottom:20px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;box-shadow:var(--sh);}
+.filter-bar label{font-size:.66rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.filter-grp{display:flex;flex-direction:column;gap:4px;}
+.semafor{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;}
+.semafor.green{background:var(--gn);}
+.semafor.yellow{background:var(--yw);}
+.semafor.red{background:var(--rd);}
+.act-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ai{background:#f5f5f7;border-radius:10px;padding:12px;}
+.ai .n{font-size:1.4rem;font-weight:700;color:var(--bl);}
+.ai .l{font-size:.63rem;text-transform:uppercase;color:var(--mu);margin-bottom:4px;font-weight:500;}
+.ai .d{font-size:.7rem;font-weight:600;margin-top:2px;}
+.ai .d.pos{color:#1a7f3c;}.ai .d.neg{color:#c41a1a;}
+.proy-card{background:linear-gradient(135deg,#e8f4fd,#f0f8ff);border:1px solid #b3d9f7;border-radius:14px;padding:18px;}
+.proy-card .lbl{color:#0077ed;}
+.proy-card .val{color:var(--bl);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div><h1>📊 Dashboard GBM — Grupo Progestion</h1><p>Felipe Campos · Growth Business Manager · Indicadores de Producción</p></div>
+  <span class="badge-gen" id="genTime">—</span>
+  <button id="btnRefreshAll" onclick="refreshAll()" title="Recarga todos los datos desde PipeDrive API" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:7px 18px;cursor:pointer;font-size:.78rem;color:#0369a1;font-weight:700;white-space:nowrap">🔄 Actualizar Dashboard</button>
+</div>
+
+<div class="alert" id="alertBanner">🚨 <span id="alertTxt"></span></div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="sw('kpis',this)">🎯 Mis KPIs</button>
+  <button class="tab-btn" onclick="sw('bdm',this)">👤 Seguimiento BDM</button>
+  <button class="tab-btn" onclick="sw('gp',this)">🌱 Growth Partners</button>
+
+  <button class="tab-btn" onclick="sw('dash',this)">📈 Dashboard</button>
+</div>
+
+<!-- TAB 1: MIS KPIs -->
+<div id="tab-kpis" class="tab-panel active">
+  <div id="kpiContent"></div>
+</div>
+
+<!-- TAB 2: SEGUIMIENTO BDM -->
+<div id="tab-bdm" class="tab-panel">
+  <div class="filter-bar">
+    <div class="filter-grp">
+      <label>Vendedor / BDM</label>
+      <select id="selUser" class="sel" onchange="renderBDM()">
+        <option value="Heinar Lazcano">Heinar Lazcano (BDM)</option>
+        <option value="Mario Germain">Mario Germain</option>
+        <option value="Jesus Montoya">Jesus Montoya</option>
+        <option value="Andres Montoya">Andres Montoya</option>
+        <option value="Felipe Campos">Felipe Campos</option>
+        <option value="Francisca Musso">Francisca Musso</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label>Empresa Relacionada GP</label>
+      <select id="selEmpresa" class="sel" onchange="renderBDM()">
+        <option value="">Todas las empresas</option>
+        <option value="Progestion">Progestion</option>
+        <option value="Audisis">Audisis</option>
+        <option value="Ensti">Ensti</option>
+        <option value="Crece">Crece</option>
+        <option value="Disecom Trade">Disecom Trade</option>
+        <option value="Disecom Logística">Disecom Logística</option>
+        <option value="Disecom D&P">Disecom D&amp;P</option>
+        <option value="Proventas">Proventas</option>
+        <option value="Medical Talent">Medical Talent</option>
+        <option value="Permanent Placement">Permanent Placement</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label>Mes</label>
+      <input type="month" id="monthPicker" class="sel" value="2026-06" onchange="renderBDM()">
+    </div>
+  </div>
+  <div class="st">Indicadores del período seleccionado</div>
+  <div class="g6 gap" id="bdmCards"></div>
+  <div class="g2 gap">
+    <div class="cc"><div class="ct">Evolutivo mensual — Actividad BDM</div><div style="height:220px;position:relative"><canvas id="cBdmEvol"></canvas></div></div>
+    <div class="cc"><div class="ct">Pipeline por Etapa — Valor CLP$</div><div style="height:220px;position:relative"><canvas id="cBdmVal"></canvas></div></div>
+  </div>
+  <div class="g2 gap">
+    <div class="cc"><div class="ct">Win Rate mensual (%)</div><div style="height:180px;position:relative"><canvas id="cBdmWR"></canvas></div></div>
+    <div class="cc"><div class="ct">Propuestas y Reuniones por mes</div><div style="height:180px;position:relative"><canvas id="cBdmPR"></canvas></div></div>
+  </div>
+  <div class="cc" style="margin-top:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="ct" style="margin-bottom:0">Deals agregados por etapa — Comparativa</div>
+      <div style="display:flex;gap:6px">
+        <button id="btnCompDay" onclick="window._bdmCompMode='day';renderBdmComp()" style="font-size:.72rem;padding:3px 11px;border-radius:6px;border:1px solid #3b82f6;cursor:pointer;transition:all .15s">Día a día</button>
+        <button id="btnCompWeek" onclick="window._bdmCompMode='week';renderBdmComp()" style="font-size:.72rem;padding:3px 11px;border-radius:6px;border:1px solid #64748b;cursor:pointer;transition:all .15s">Semana a semana</button>
+      </div>
+    </div>
+    <div id="bdmCompInfo" style="font-size:.7rem;color:var(--mu);margin-bottom:6px;padding:3px 8px;background:rgba(37,99,235,.06);border-radius:5px"></div>
+    <div style="height:240px;position:relative"><canvas id="cBdmComp"></canvas></div>
+    <div id="bdmCompPct" style="display:flex;gap:0;margin-top:10px;border-top:1px solid var(--bd);padding-top:8px"></div>
+  </div>
+  <div class="g2 gap">
+    <div class="cc">
+      <div class="ct">Embudo Pipeline — Deals por Etapa <span id="funnelLabel" style="font-size:.72rem;color:var(--mu);font-weight:400"></span></div>
+      <div id="funnelBDM" style="padding:6px 0"></div>
+    </div>
+    <div class="cc"><div class="ct">Empresas Relacionadas GP — Valor Ganado CLP$</div><div style="height:240px;position:relative"><canvas id="cEmpresaVal"></canvas></div></div>
+  </div>
+  <div class="cc" style="margin-top:16px">
+    <div class="ct">Clientes GP contactados — Deals por etapa del embudo</div>
+    <div style="height:280px;position:relative"><canvas id="cClientesEtapa"></canvas></div>
+  </div>
+  <div class="st">Clientes y estado del embudo</div>
+  <div class="tw" id="bdmClientesTable"></div>
+  <div class="st">Detalle comparativo de vendedores</div>
+  <div class="tw" id="bdmTable"></div>
+  <div class="st" style="margin-top:24px">Reuniones Realizadas — Deals por BDM</div>
+  <div class="cc" id="reunDealsTable" style="padding:14px 16px;margin-top:8px"></div>
+</div>
+
+<!-- TAB 3: GROWTH PARTNERS — LevelUp -->
+<div id="tab-gp" class="tab-panel">
+  <!-- Loading / Error state -->
+  <div id="gpLoadState" style="display:none;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px">
+    <div id="gpSpinner" style="display:none;width:40px;height:40px;border:3px solid var(--bd);border-top-color:var(--bl);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    <div id="gpLoadMsg" style="font-size:.88rem;color:var(--mu)">Cargando datos LevelUp desde PipeDrive...</div>
+    <div id="gpErrMsg" style="display:none;background:#fff1f0;border:1px solid #fca5a5;border-radius:10px;padding:16px 24px;text-align:center;max-width:500px">
+      <div style="font-size:1rem;font-weight:600;color:#b91c1c;margin-bottom:8px">⚠️ No se pudo conectar a la API</div>
+      <div id="gpErrDetail" style="font-size:.8rem;color:#7f1d1d;margin-bottom:12px"></div>
+      <button onclick="_GPD=null;initGP()" style="background:var(--bl);color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-size:.82rem">Reintentar</button>
+    </div>
+  </div>
+
+  <!-- Main GP content -->
+  <div id="gpMain">
+  <div class="filter-bar">
+    <div class="filter-grp">
+      <label>Propietario GP</label>
+      <select id="selGP" class="sel" onchange="renderGP()">
+        <option value="Todos">Todos los propietarios</option>
+        <option value="Roberto Montoya">Roberto Montoya</option>
+        <option value="Felipe Campos">Felipe Campos</option>
+        <option value="Andres Montoya">Andres Montoya</option>
+        <option value="Heinar Lazcano">Heinar Lazcano</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label>Empresa Relacionada GP</label>
+      <select id="selEmpresaGP" class="sel" onchange="renderGP()">
+        <option value="">Todas las organizaciones</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label>Mes</label>
+      <input type="month" id="monthPickerGP" class="sel" value="2026-06" onchange="renderGP()">
+    </div>
+    <div class="filter-grp">
+      <label>Gestión LevelUp</label>
+      <select id="selGestionGP" class="sel" onchange="renderGP()">
+        <option value="">Todas las gestiones</option>
+        <option value="Audisis">Audisis</option>
+        <option value="Trade MKT + SC">Trade MKT + Supply Chain</option>
+        <option value="BBDD LevelUp">BBDD Unificada LevelUp</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label>Granularidad temporal</label>
+      <select id="selGranGP" class="sel" onchange="renderGP()">
+        <option value="mensual">Mensual</option>
+        <option value="semanal">Semanal</option>
+        <option value="diario">Diario</option>
+      </select>
+    </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <button onclick="_GPD=null;initGP()" title="Recargar datos desde PipeDrive API"
+        style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:.78rem;color:#0369a1;font-weight:600;display:flex;align-items:center;gap:6px">
+        🔄 Actualizar API
+      </button>
+      <div style="background:linear-gradient(135deg,#e8f4fd,#f0f8ff);border:1px solid #b3d9f7;border-radius:10px;padding:8px 18px;text-align:center">
+        <div style="font-size:.63rem;color:var(--mu);text-transform:uppercase;letter-spacing:.06em">Growth Partner</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--bl)">⚡ LevelUp Sales Consulting</div>
+        <div id="gpApiTag" style="font-size:.63rem;color:var(--mu)">Descubriendo pipelines LevelUp…</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- API Debug / Status bar -->
+  <div id="gpApiDebugBar" style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#e2e8f0;font-size:.72rem;line-height:1.7;display:none"></div>
+
+  <!-- BBDD LevelUp summary cards -->
+  <div class="st">🗂️ BBDD Unificada LevelUp — Mailing automatizado LinkedIn</div>
+  <div class="g5 gap" id="gpBBDDSummary"></div>
+
+  <!-- Cards por vertical -->
+  <div class="st" style="margin-top:18px">📊 Gestión por Vertical LevelUp</div>
+  <div class="g3 gap" id="gpVerticalCards"></div>
+
+  <!-- Gráficos: evolutivo + embudo -->
+  <div class="g2 gap" style="margin-top:18px">
+    <div class="cc">
+      <div class="ct">Evolución de Deals en Pipeline <span id="gpEvolLabel" style="font-size:.75rem;font-weight:400;color:var(--mu)"></span></div>
+      <div style="height:230px;position:relative"><canvas id="cGpEvol"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ct">Estado del Embudo — Deals activos por etapa</div>
+      <div style="height:230px;position:relative"><canvas id="cGpFunnelChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ICP Summary table from Progestion_Leads_ICP_SoloChile.xlsx -->
+  <div class="st" style="margin-top:18px">📊 Resumen BBDD ICP — Progestion_Leads_ICP_SoloChile.xlsx</div>
+  <div id="gpICPTable"></div>
+
+  <!-- Tabla detalle -->
+  <div class="st" style="margin-top:22px">📋 Detalle de Deals — Pipeline LevelUp</div>
+  <div id="gpDetalleTable"></div>
+</div><!-- /gpMain -->
+</div>
+
+
+<!-- TAB 5: DASHBOARD ANALYTICS -->
+<div id="tab-dash" class="tab-panel">
+
+  <!-- Filter bar -->
+  <div class="filter-bar gap" style="flex-wrap:wrap">
+    <div class="filter-grp">
+      <label for="dFY">Año</label>
+      <select id="dFY" class="sel" onchange="if(_DD)renderDash()">
+        <option value="">Todos</option>
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label for="dFM">Mes</label>
+      <select id="dFM" class="sel" onchange="if(_DD)renderDash()">
+        <option value="">Todos</option>
+        <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+        <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+        <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label for="dFS">Estado</label>
+      <select id="dFS" class="sel" onchange="if(_DD)renderDash()">
+        <option value="">Todos</option>
+        <option value="open">Abierto</option>
+        <option value="won">Ganado</option>
+        <option value="lost">Perdido</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label for="dFSg">Etapa</label>
+      <select id="dFSg" class="sel" onchange="if(_DD)renderDash()">
+        <option value="">Todas</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label for="dFEm">Empresa GP</label>
+      <select id="dFEm" class="sel" onchange="if(_DD)renderDash()">
+        <option value="">Todas</option>
+        <option>Progestion</option><option>Audisis</option><option>Ensti</option><option>Crece</option>
+        <option>Disecom Trade</option><option>Disecom Logística</option><option>Disecom D&P</option>
+        <option>Proventas</option><option>Medical Talent</option><option>Permanent Placement</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label for="dFOw">Vendedor/BDM</label>
+      <select id="dFOw" class="sel" onchange="if(_DD)renderDash()">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div class="filter-grp">
+      <label for="dFPipe">Pipeline</label>
+      <select id="dFPipe" class="sel" onchange="if(_DD)renderDash()">
+        <option value="">Todos</option>
+        <option value="2">GRUPO PROGESTION</option>
+        <option value="3">POST-VENTA</option>
+        <option value="4">CROSS SELLING</option>
+        <option value="5">GP PERÚ</option>
+      </select>
+    </div>
+    <button onclick="_DD=null;initDashboard()" class="sel" style="margin-left:auto;padding:6px 14px;font-size:.78rem">↺ Actualizar datos</button>
+  </div>
+
+  <!-- Loading -->
+  <div id="dashLoad" style="display:none;justify-content:center;align-items:center;padding:80px;gap:14px;flex-direction:column">
+    <div style="width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--bll);border-radius:50%;animation:spin .8s linear infinite"></div>
+    <span style="color:var(--mu);font-size:.85rem">Cargando datos desde PipeDrive...</span>
+    <span id="dashLoadMsg" style="color:var(--mu);font-size:.75rem"></span>
+  </div>
+
+  <!-- Main dashboard content -->
+  <div id="dashMain" style="display:none">
+
+    <!-- SECCIÓN 1: Summary Cards -->
+    <div class="g6 gap" id="dashCards"></div>
+
+    <!-- SECCIÓN 2: KPI Scorecard -->
+    <div class="st">KPIs Descriptor de Cargo — Semaforización</div>
+    <div id="dashKPI" class="gap"></div>
+
+    <!-- SECCIÓN 3: Evolutivo + Funnel -->
+    <div class="g2 gap">
+      <div class="cc">
+        <div class="ct">Evolutivo — Creación de Tratos por Mes</div>
+        <div style="height:260px;position:relative"><canvas id="dchMonthly"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Embudo por Actividad — Deals Abiertos</div>
+        <div style="height:260px;position:relative"><canvas id="dchFunnel"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 4: Owner×Stage + Owner Deals -->
+    <div class="g2 gap">
+      <div class="cc">
+        <div class="ct">Tratos por Vendedor/BDM y Etapa del Funnel</div>
+        <div style="height:280px;position:relative"><canvas id="dchOwnerStage"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Deals por Vendedor/BDM — Total</div>
+        <div style="height:280px;position:relative"><canvas id="dchOwnerDeals"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 5: Stage Donut + Empresa -->
+    <div class="g2 gap">
+      <div class="cc">
+        <div class="ct">Deals por Funnel de Venta (Abiertos)</div>
+        <div style="height:240px;position:relative"><canvas id="dchStageDonut"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Tratos por Empresa Relacionada GP</div>
+        <div style="height:240px;position:relative"><canvas id="dchEmpresa"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 6: Top Oportunidades -->
+    <div class="st">Top Oportunidades por Valor CLP — Funnel por Vendedor/Deal</div>
+    <div class="tw gap" id="dashTop"></div>
+
+    <!-- SECCIÓN 7: Análisis por Vendedor -->
+    <div class="st">Análisis por Vendedor/BDM y Oportunidades</div>
+    <div class="tw gap" id="dashOwnerAnalysis"></div>
+
+    <!-- SECCIÓN 8: Pipeline Ponderado + Win Rate -->
+    <div class="g2 gap">
+      <div class="cc">
+        <div class="ct">Evolutivo — Pipeline Ponderado (×Cuota)</div>
+        <div style="height:260px;position:relative"><canvas id="dchWeighted"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Evolutivo — Win Rate &amp; Nuevos Deals</div>
+        <div style="height:260px;position:relative"><canvas id="dchWinRate"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 9: Detalle de Tratos -->
+    <div class="st">Detalle por Trato — ID, Propietario, Empresa, Contacto, Título, Etapa, Estado, Valor, Creación</div>
+    <div class="tw" id="dashDetail"></div>
+
+  </div><!-- /dashMain -->
+</div><!-- /tab-dash -->
+
+<script>
+/* ─── CONSTANTES TEMA ─── */
+const FONT     = '#6e6e73';   /* --mu: texto muted en charts */
+const GRIDLINE = 'rgba(0,0,0,0.06)'; /* líneas de grilla sutiles */
+
+/* ─── DATOS EMBEBIDOS ─── */
+const D = {
+  generated:"25-06-2026, 17:00 hrs",
+  mesActual:"Junio 2026", diaActual:24, diasMes:30,
+  weighted:675221175.75, ratio:2.46, wonMonth:2, winRate:5,
+  heinar:{reunion:3,propuesta:5,negociacion:1,contacto:197,conv:63,total:207},
+  gp:{total:3,wonMonth:0,byOwner:{"Heinar Lazcano":3},byStage:{"Prospecto":1,"Contacto":2}},
+  openTotal:387, wonTotal:55, lostTotal:630,
+  openVal:1173675349, wonVal:1659001092, sinResp:351,
+  funnel:[
+    {name:"Negociación",cnt:3,val:2453000000},{name:"Propuesta Enviada",cnt:23,val:4312000000},
+    {name:"Reunión",cnt:54,val:419000000},{name:"Contacto",cnt:299,val:59000000},{name:"Prospecto",cnt:8,val:25000000}
+  ],
+  vendors:[
+    {name:"Francisca Musso",open:0,won:37,val:35410092},
+    {name:"Mario Germain",open:142,won:13,val:871990000},
+    {name:"Andres Montoya",open:4,won:3,val:750000000},
+    {name:"Jesus Montoya",open:45,won:0,val:0},
+    {name:"Heinar Lazcano",open:100,won:0,val:39103969},
+    {name:"Felipe Campos",open:10,won:2,val:2364000}
+  ],
+  lossReasons:[{r:"No Interesado",n:477},{r:"Sin motivo",n:444},{r:"Precio",n:61},{r:"Licitación desierta",n:53},{r:"Relación competencia",n:37}],
+  topDeals:[
+    {t:"Soprole",v:448000000,o:"Mario Germain",s:"Propuesta Enviada"},
+    {t:"Virutex Ilko",v:277000000,o:"Mario Germain",s:"Propuesta Enviada"},
+    {t:"Conecatdos",v:270000000,o:"Mario Germain",s:"Propuesta Enviada"},
+    {t:"SCJ",v:259651042,o:"Andres Montoya",s:"Negociación"},
+    {t:"Farmacias Ahumada",v:250000000,o:"Mario Germain",s:"Negociación"},
+    {t:"Midea",v:250000000,o:"Andres Montoya",s:"Negociación"},
+    {t:"Abastible",v:215000000,o:"Mario Germain",s:"Negociación"},
+    {t:"Nestle",v:197500000,o:"Andres Montoya",s:"Negociación"},
+    {t:"Unilever",v:186919971,o:"Mario Germain",s:"Propuesta Enviada"},
+    {t:"Mutual",v:120000000,o:"Andres Montoya",s:"Negociación"}
+  ],
+  negDeals:[{t:"Sixbridge",v:15500000,next:"Sin actividad"}]
+};
+
+/* Histórico mensual — equipo BDM (datos reales donde disponibles, referencia estimada meses anteriores) */
+const HX = {
+  meses:['Ene','Feb','Mar','Abr','May','Jun'],
+  pipeline:[1.1,1.4,1.7,2.0,2.3,2.46],
+  winRate:[3,4,5,5,6,5],
+  newClients:[1,2,1,3,4,2],
+  conv:[32,35,38,40,42,63]
+};
+
+/* Histórico Growth Partners (pipeline LevelUp) */
+const GP_HX = {
+  'Todos':{
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[5,6,7,8,7,7],propuestas:[12,15,18,14,16,15],reuniones:[22,26,30,24,28,26],contactos:[180,200,220,190,210,200],
+    stageVal:{Negociación:50000000,PropuestaEnviada:120000000,Reunión:80000000,Contacto:30000000,Prospecto:10000000}
+  },
+  'Mario Germain':{
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[6,7,8,9,8,8],propuestas:[6,8,9,7,8,8],reuniones:[12,14,16,13,15,14],contactos:[90,100,110,95,105,135],
+    stageVal:{Negociación:30000000,PropuestaEnviada:60000000,Reunión:40000000,Contacto:15000000,Prospecto:5000000}
+  },
+  'Jesus Montoya':{
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[4,5,6,7,6,6],propuestas:[4,5,7,5,6,5],reuniones:[8,10,12,9,11,10],contactos:[70,80,90,75,85,60],
+    stageVal:{Negociación:15000000,PropuestaEnviada:45000000,Reunión:30000000,Contacto:10000000,Prospecto:3000000}
+  },
+  'Andres Montoya':{
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[5,6,7,8,7,7],propuestas:[1,1,1,1,1,1],reuniones:[1,2,1,1,2,1],contactos:[15,18,20,16,19,2],
+    stageVal:{Negociación:3000000,PropuestaEnviada:10000000,Reunión:5000000,Contacto:2000000,Prospecto:1000000}
+  },
+  'Heinar Lazcano':{
+    meses:['Jun'],
+    winRate:[0],propuestas:[1],reuniones:[1],contactos:[3],
+    stageVal:{Negociación:0,PropuestaEnviada:5000000,Reunión:2000000,Contacto:1000000,Prospecto:0}
+  }
+};
+
+/* ─── LEVELUP: DATOS POR VERTICAL ─────────────────────────────
+   Fuente: BBDD Unificada LevelUp (Progestion_Leads_ICP_SoloChile.xlsx)
+   Audisis: Felipe Campos · Operación Retail: Andrés Montoya · Disecom: Jesús Montoya */
+const LU_HX = {
+  'Todos': {
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[0,2,3,4,5,5],
+    propuestas:[8,10,13,12,14,16],
+    reuniones:[14,20,25,22,26,27],
+    contactos:[120,155,185,175,195,153],
+    stageVal:{Negociacion:45000000,PropuestaEnviada:104103969,Reunion:50000000,Contacto:17000000,Prospecto:1000000}
+  },
+  'Audisis': {
+    bdm:'Felipe Campos',
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[0,0,0,0,0,0],
+    propuestas:[1,1,2,2,3,5],
+    reuniones:[0,0,0,0,0,0],
+    contactos:[0,0,1,2,4,7],
+    stageVal:{Negociacion:0,PropuestaEnviada:0,Reunion:0,Contacto:0,Prospecto:0}
+  },
+  'Operación Retail': {
+    bdm:'Andrés Montoya',
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[5,6,7,8,7,7],
+    propuestas:[1,1,1,1,1,2],
+    reuniones:[1,2,1,1,2,2],
+    contactos:[15,18,20,16,19,2],
+    stageVal:{Negociacion:3000000,PropuestaEnviada:10000000,Reunion:5000000,Contacto:2000000,Prospecto:1000000}
+  },
+  'Disecom TM+SC': {
+    bdm:'Jesús Montoya',
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    winRate:[4,5,6,7,6,6],
+    propuestas:[4,5,7,5,6,5],
+    reuniones:[8,10,12,9,11,11],
+    contactos:[70,80,90,75,85,9],
+    stageVal:{Negociacion:15000000,PropuestaEnviada:45000000,Reunion:30000000,Contacto:10000000,Prospecto:3000000}
+  }
+};
+
+const LU_EMBUDO = {
+  'Todos':[{s:'Prospecto',n:3},{s:'Contacto',n:163},{s:'Reunión',n:27},{s:'Propuesta Enviada',n:16},{s:'Negociación',n:4}],
+  'Audisis':[{s:'Prospecto',n:0},{s:'Contacto',n:1},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:3},{s:'Negociación',n:0}],
+  'Operación Retail':[{s:'Prospecto',n:0},{s:'Contacto',n:2},{s:'Reunión',n:2},{s:'Propuesta Enviada',n:2},{s:'Negociación',n:1}],
+  'Disecom TM+SC':[{s:'Prospecto',n:2},{s:'Contacto',n:12},{s:'Reunión',n:17},{s:'Propuesta Enviada',n:8},{s:'Negociación',n:2}]
+};
+
+/* BBDD real LevelUp — Excel Progestion_Leads_ICP_SoloChile.xlsx (actualizado 16-Jun-2026) */
+const LU_BBDD = {
+  'Todos': {leads:573,calificados:11,pctICP:1.9,bdm:'Mario+Felipe+Jesús+Andrés'},
+  'Audisis': {
+    bdm:'Felipe Campos', leads:146, calificados:2, pctICP:1.4,
+    topRoles:{'Ops/Supply':76,'Otros':67,'Comercial':2,'Marketing':1},
+    topSectores:{'Otros':81,'Retail/Consumo':40,'Tech':14,'Farma':8},
+    servicio:'Inteligencia de negocios: OSA, Perfect Store, KPIs en vivo'
+  },
+  'Operación Retail': {
+    bdm:'Andrés Montoya', leads:190, calificados:3, pctICP:1.6,
+    topRoles:{'Ops/Supply':161,'Otros':19,'TM/Category':4,'Compras':3},
+    topSectores:{'Otros':89,'Retail/Consumo':44,'Alimentos':34,'Farma':13},
+    servicio:'Mercaderistas y ejecución en el punto de venta (16 regiones)'
+  },
+  'Disecom TM+SC': {
+    bdm:'Jesús Montoya', leads:237, calificados:6, pctICP:2.5,
+    topRoles:{'Marketing/Brand':204,'TM/Category':17,'Otros':8,'Comercial':5},
+    topSectores:{'Otros':108,'Retail/Consumo':76,'Vinos/Licores':13,'Tech':13},
+    servicio:'Trade Marketing + Supply Chain: diseño, producción, bodega, instalación'
+  }
+};
+
+/* Datos por Empresa Relacionada GP — lista completa PipeDrive */
+// Nota: empresas sin datos reales confirmar tienen datos estimados (pendiente real API)
+/* Datos por Empresa Relacionada GP — actualizado 25-06-2026 */
+const EMPRESA_DATA = {
+  '': {
+    label:'Todas las empresas',
+    funnel:[{s:'Prospecto',n:5},{s:'Contacto',n:308},{s:'Reunión',n:53},{s:'Propuesta Enviada',n:23},{s:'Negociación',n:3}],
+    wonVal:{'Audisis':2704000,'Crece':0,'Disecom D&P':25870640,'Disecom Logística':17937602,'Disecom Trade':62899350,'Ensti':105000000,'Medical Talent':0,'Permanent Placement':8852500,'Progestion':1436500000,'Proventas':0},
+    winRate:0,propuestas:23,reuniones:53,contactos:308
+  },
+  'Audisis': {
+    label:'Audisis',
+    funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:1},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:3},{s:'Negociación',n:0}],
+    wonVal:{'Audisis':2704000},
+    winRate:0,propuestas:3,reuniones:0,contactos:1
+  },
+  'Crece': {
+    label:'Crece',
+    funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:1},{s:'Reunión',n:1},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],
+    wonVal:{'Crece':0},
+    winRate:0,propuestas:0,reuniones:1,contactos:1
+  },
+  'Disecom D&P': {
+    label:'Disecom D&P',
+    funnel:[{s:'Prospecto',n:1},{s:'Contacto',n:10},{s:'Reunión',n:9},{s:'Propuesta Enviada',n:2},{s:'Negociación',n:0}],
+    wonVal:{'Disecom D&P':25870640},
+    winRate:0,propuestas:2,reuniones:9,contactos:10
+  },
+  'Disecom Logística': {
+    label:'Disecom Logística',
+    funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:5},{s:'Reunión',n:2},{s:'Propuesta Enviada',n:2},{s:'Negociación',n:1}],
+    wonVal:{'Disecom Logística':17937602},
+    winRate:0,propuestas:2,reuniones:2,contactos:5
+  },
+  'Disecom Trade': {
+    label:'Disecom Trade',
+    funnel:[{s:'Prospecto',n:1},{s:'Contacto',n:11},{s:'Reunión',n:6},{s:'Propuesta Enviada',n:3},{s:'Negociación',n:0}],
+    wonVal:{'Disecom Trade':62899350},
+    winRate:0,propuestas:3,reuniones:6,contactos:11
+  },
+  'Ensti': {
+    label:'Ensti',
+    funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:2},{s:'Reunión',n:3},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],
+    wonVal:{'Ensti':105000000},
+    winRate:0,propuestas:0,reuniones:3,contactos:2
+  },
+  'Medical Talent': {
+    label:'Medical Talent',
+    funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:71},{s:'Reunión',n:2},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],
+    wonVal:{'Medical Talent':0},
+    winRate:0,propuestas:0,reuniones:2,contactos:71
+  },
+  'Permanent Placement': {
+    label:'Permanent Placement',
+    funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:4},{s:'Reunión',n:3},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:1}],
+    wonVal:{'Permanent Placement':8852500},
+    winRate:0,propuestas:1,reuniones:3,contactos:4
+  },
+  'Progestion': {
+    label:'Progestion',
+    funnel:[{s:'Prospecto',n:3},{s:'Contacto',n:203},{s:'Reunión',n:26},{s:'Propuesta Enviada',n:10},{s:'Negociación',n:1}],
+    wonVal:{'Progestion':1436500000},
+    winRate:0,propuestas:10,reuniones:26,contactos:203
+  },
+  'Proventas': {
+    label:'Proventas',
+    funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:1},{s:'Propuesta Enviada',n:2},{s:'Negociación',n:0}],
+    wonVal:{'Proventas':0},
+    winRate:0,propuestas:2,reuniones:1,contactos:0
+  }
+};
+
+/* Histórico mensual por empresa */
+const EMPRESA_HX = {
+  '':                  {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[3,4,5,5,6,5],propuestas:[20,23,26,21,24,23],reuniones:[45,50,55,48,52,54],contactos:[250,270,285,265,275,299]},
+  'Progestion':        {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[6,7,8,8,8,8],propuestas:[3,4,5,4,5,5],reuniones:[8,10,11,9,11,12],contactos:[35,38,42,38,42,45]},
+  'Audisis':           {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[4,5,6,7,6,6],propuestas:[5,6,7,6,7,7],reuniones:[13,15,17,14,16,18],contactos:[65,70,75,68,72,80]},
+  'Ensti':             {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[3,4,5,5,5,5],propuestas:[2,2,3,3,3,3],reuniones:[4,5,6,5,6,6],contactos:[18,20,22,20,23,25]},
+  'Crece':             {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[3,4,5,5,5,5],propuestas:[3,3,4,4,4,4],reuniones:[7,8,9,8,9,10],contactos:[42,46,50,44,48,55]},
+  'Disecom Trade':     {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[3,3,4,4,4,4],propuestas:[1,1,2,2,2,2],reuniones:[3,3,4,3,4,4],contactos:[14,16,18,15,18,20]},
+  'Disecom Logística': {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[3,3,4,4,4,4],propuestas:[1,1,1,1,1,1],reuniones:[2,2,3,2,3,3],contactos:[12,14,16,13,16,18]},
+  'Disecom D&P':       {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[3,3,4,4,4,4],propuestas:[1,1,1,1,1,1],reuniones:[2,2,3,2,3,3],contactos:[10,12,14,11,13,15]},
+  'Proventas':         {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[5,6,7,8,7,7],propuestas:[7,8,9,8,9,9],reuniones:[18,20,22,19,21,22],contactos:[100,110,115,105,112,120]},
+  'Medical Talent':    {meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[0,0,0,0,0,0],propuestas:[0,0,0,0,0,1],reuniones:[0,0,0,0,1,2],contactos:[0,10,25,40,60,75]},
+  'Permanent Placement':{meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[0,0,0,0,0,0],propuestas:[0,0,0,0,0,0],reuniones:[0,0,1,1,1,2],contactos:[0,2,5,7,8,10]}
+};
+
+/* Histórico por usuario — actualizado 25-06-2026 con datos reales PipeDrive */
+const BDM_HX = {
+  'Heinar Lazcano':{
+    // DATOS REALES PipeDrive 25-06-2026 (223 deals open)
+    empresas:['Disecom D&P','Medical Talent','Permanent Placement','Progestion','Proventas'],
+    empresaData:{
+      'Disecom D&P':{funnel:[{s:'Prospecto',n:1},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:0}],contactos:0,reuniones:0,propuestas:1,winRate:0},
+      'Medical Talent':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:68},{s:'Reunión',n:2},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:68,reuniones:2,propuestas:0,winRate:0},
+      'Permanent Placement':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:1}],contactos:0,reuniones:0,propuestas:1,winRate:0},
+      'Progestion':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:143},{s:'Reunión',n:1},{s:'Propuesta Enviada',n:2},{s:'Negociación',n:0}],contactos:143,reuniones:1,propuestas:2,winRate:0},
+      'Proventas':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:0}],contactos:0,reuniones:0,propuestas:1,winRate:0}
+    },
+    meses:['Jun'],winRate:[0],propuestas:[5],reuniones:[3],contactos:[211],
+    stages:{Prospecto:[1],Contacto:[211],Reunion:[3],Propuesta:[5],Negociacion:[2]},
+    stageVal:{Negociación:15500000,PropuestaEnviada:39103969,Reunión:8000000,Contacto:5000000,Prospecto:0}
+  },
+  'Mario Germain':{
+    empresas:['Audisis','Crece','Disecom D&P','Disecom Logística','Disecom Trade','Ensti','Medical Talent','Permanent Placement','Progestion','Proventas'],
+    empresaData:{
+      'Audisis':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:1},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:1,reuniones:0,propuestas:0,winRate:0},
+      'Crece':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:1},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:1,reuniones:0,propuestas:0,winRate:0},
+      'Disecom D&P':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:7},{s:'Reunión',n:6},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:0}],contactos:7,reuniones:6,propuestas:1,winRate:0},
+      'Disecom Logística':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:5},{s:'Reunión',n:2},{s:'Propuesta Enviada',n:2},{s:'Negociación',n:0}],contactos:5,reuniones:2,propuestas:2,winRate:0},
+      'Disecom Trade':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:4},{s:'Reunión',n:4},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:0}],contactos:4,reuniones:4,propuestas:1,winRate:0},
+      'Ensti':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:2},{s:'Reunión',n:3},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:2,reuniones:3,propuestas:0,winRate:0},
+      'Medical Talent':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:3},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:3,reuniones:0,propuestas:0,winRate:0},
+      'Permanent Placement':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:3},{s:'Reunión',n:3},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:3,reuniones:3,propuestas:0,winRate:0},
+      'Progestion':{funnel:[{s:'Prospecto',n:2},{s:'Contacto',n:57},{s:'Reunión',n:18},{s:'Propuesta Enviada',n:7},{s:'Negociación',n:0}],contactos:57,reuniones:18,propuestas:7,winRate:0},
+      'Proventas':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:1},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:0,reuniones:1,propuestas:0,winRate:0}
+    },
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[6,7,8,9,8,8],propuestas:[6,8,9,7,8,8],reuniones:[12,14,16,13,15,14],contactos:[90,100,110,95,105,135],
+    stages:{Prospecto:[0,0,1,1,1,2],Contacto:[90,100,110,95,105,135],Reunion:[12,14,16,13,15,14],Propuesta:[6,8,9,7,8,8],Negociacion:[1,1,2,1,1,0]},
+    stageVal:{Negociación:30000000,PropuestaEnviada:60000000,Reunión:40000000,Contacto:15000000,Prospecto:5000000}
+  },
+  'Jesus Montoya':{
+    /* Datos actualizados con PipeDrive real — 26 jun 2026
+       Pipeline Trade MKT + Supply Chain: 15 deals activos
+       6 Prospecto · 8 Contacto/Con tarea · 0 Reunión · 1 Presupuestado (EDGEWELL $10.3M) */
+    empresas:['Disecom Trade'],
+    empresaData:{
+      'Disecom Trade':{
+        funnel:[
+          {s:'Prospecto',       n:6},
+          {s:'Contacto',        n:8},
+          {s:'Reunión',         n:0},
+          {s:'Propuesta Enviada',n:1},
+          {s:'Negociación',     n:0}
+        ],
+        contactos:8, reuniones:0, propuestas:1, winRate:0
+      }
+    },
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],
+    /* Jun real: 0 reuniones realizadas, 1 presupuestado (EDGEWELL), 8 contactos activos */
+    winRate:   [4,  5,  6,  7,  6,  0],
+    propuestas:[4,  5,  7,  5,  6,  1],
+    reuniones: [8, 10, 12,  9, 11,  0],
+    contactos: [70,80, 90, 75, 85,  8],
+    stages:{
+      Prospecto: [0,0,0,0,0,6],
+      Contacto:  [70,80,90,75,85,8],
+      Reunion:   [8,10,12,9,11,0],
+      Propuesta: [4,5,7,5,6,1],
+      Negociacion:[0,0,0,0,0,0]
+    },
+    /* stageVal real: solo EDGEWELL en Propuesta Enviada */
+    stageVal:{Negociación:0, PropuestaEnviada:10354080, Reunión:0, Contacto:0, Prospecto:0}
+  },
+  'Andres Montoya':{
+    empresas:['Disecom D&P','Disecom Trade','Progestion'],
+    empresaData:{
+      'Disecom D&P':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:1},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:0,reuniones:1,propuestas:0,winRate:0},
+      'Disecom Trade':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:1},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:0}],contactos:0,reuniones:1,propuestas:1,winRate:0},
+      'Progestion':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:1}],contactos:0,reuniones:0,propuestas:0,winRate:0}
+    },
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[5,6,7,8,7,7],propuestas:[1,1,1,1,1,2],reuniones:[1,2,1,1,2,2],contactos:[15,18,20,16,19,2],
+    stages:{Prospecto:[0,0,0,0,0,0],Contacto:[15,18,20,16,19,2],Reunion:[1,2,1,1,2,2],Propuesta:[1,1,1,1,1,2],Negociacion:[0,0,0,0,0,1]},
+    stageVal:{Negociación:3000000,PropuestaEnviada:10000000,Reunión:5000000,Contacto:2000000,Prospecto:1000000}
+  },
+  'Felipe Campos':{
+    empresas:['Audisis','Disecom Logística','Disecom Trade','Progestion','Proventas'],
+    empresaData:{
+      'Audisis':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:3},{s:'Negociación',n:0}],contactos:0,reuniones:0,propuestas:3,winRate:0},
+      'Disecom Logística':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:1}],contactos:0,reuniones:0,propuestas:0,winRate:0},
+      'Disecom Trade':{funnel:[{s:'Prospecto',n:1},{s:'Contacto',n:6},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:0},{s:'Negociación',n:0}],contactos:6,reuniones:0,propuestas:0,winRate:0},
+      'Progestion':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:0}],contactos:0,reuniones:0,propuestas:1,winRate:0},
+      'Proventas':{funnel:[{s:'Prospecto',n:0},{s:'Contacto',n:0},{s:'Reunión',n:0},{s:'Propuesta Enviada',n:1},{s:'Negociación',n:0}],contactos:0,reuniones:0,propuestas:1,winRate:0}
+    },
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[3,4,5,5,6,5],propuestas:[1,1,2,2,2,5],reuniones:[2,2,3,2,3,0],contactos:[10,12,15,12,15,7],
+    stages:{Prospecto:[0,0,0,0,0,1],Contacto:[10,12,15,12,15,7],Reunion:[2,2,3,2,3,0],Propuesta:[1,1,2,2,2,5],Negociacion:[0,0,0,0,0,1]},
+    stageVal:{Negociación:0,PropuestaEnviada:0,Reunión:0,Contacto:0,Prospecto:0}
+  },
+  'Francisca Musso':{
+    empresas:[],
+    empresaData:{},
+    meses:['Ene','Feb','Mar','Abr','May','Jun'],winRate:[8,9,10,11,10,10],propuestas:[3,4,5,4,5,5],reuniones:[6,7,8,7,8,8],contactos:[40,45,50,44,48,50],
+    stages:{Prospecto:[0,0,0,0,0,0],Contacto:[40,45,50,44,48,50],Reunion:[6,7,8,7,8,8],Propuesta:[3,4,5,4,5,5],Negociacion:[1,1,2,1,2,2]},
+    stageVal:{Negociación:5000000,PropuestaEnviada:20000000,Reunión:15000000,Contacto:5000000,Prospecto:0}
+  }
+};
+
+/* Deals individuales por vendedor (actualizado 25-06-2026) */
+const VENDOR_DEALS = {
+  'Heinar Lazcano': [],
+  'Mario Germain': [],
+  'Jesus Montoya': [],
+  'Andres Montoya': [],
+  'Felipe Campos': [],
+  'Francisca Musso': [],
+  'Roberto Montoya': []
+};
+
+/* Deals ganados por vendedor — pipeline 2, actualizado 25-06-2026 */
+const VENDOR_WON = {
+  'Heinar Lazcano': 0,
+  'Mario Germain': 15,
+  'Jesus Montoya': 0,
+  'Andres Montoya': 3,
+  'Felipe Campos': 2,
+  'Francisca Musso': 37,
+  'Roberto Montoya': 0
+};
+
+/* Deals que han pasado por etapa Reunión (actualizado 25-06-2026) */
+const REUNION_DEALS = {
+  'Heinar Lazcano': [
+    {t:'CAMARA DE COMERCIO PERUANO CHILENO',o:'Cámara Peruano Chilena',s:'Propuesta Enviada',v:2682000},
+    {t:'PROMOTORIA RETAIL',o:'Fotomar',s:'Propuesta Enviada',v:2400000},
+    {t:'PERMANENT',o:'General Mills',s:'Propuesta Enviada',v:3000000},
+    {t:'Sixbridge',o:'Sixbridge',s:'Negociación',v:15500000},
+    {t:'Servicios de reposición Hoffman',o:'Hoffman Valdivia',s:'Propuesta Enviada',v:1500000},
+    {t:'Fundacion Las Rosas',o:'Fundacion Las Rosas',s:'Reunión',v:0},
+    {t:'Fosfoquim',o:'Fosfoquim',s:'Reunión',v:0},
+    {t:'PAL Publicidad',o:'PAL Publicidad',s:'Negociación',v:1004468},
+    {t:'ACHS',o:'ACHS',s:'Reunión',v:0},
+  ],
+  'Mario Germain': [
+    {t:'DISECOM D&P',o:'Ajinomoto',s:'Reunión',v:1},
+    {t:'RENTOKIL',o:'Rentokil',s:'Reunión',v:1},
+    {t:'PROGESTION',o:'Banco Internacional',s:'Reunión',v:1},
+    {t:'CLÍNICA UNIVERSIDAD LOS ANDES',o:'Clínica U. Los Andes',s:'Reunión',v:1},
+    {t:'TRADE MARKETING',o:'Honor',s:'Reunión',v:0},
+    {t:'PERMANENT PLACEMENT',o:'Laboratorio Prater',s:'Reunión',v:10},
+    {t:'OPERARIOS DE BODEGA',o:'Pepsico',s:'Propuesta Enviada',v:14000000},
+    {t:'LICITACION OPERARIOS',o:'Ripley',s:'Reunión',v:1},
+    {t:'ACERCAMIENTO',o:'Banco Itaú',s:'Reunión',v:1},
+    {t:'BRANDING OFICINA',o:'Jungheinrich',s:'Propuesta Enviada',v:75800000},
+    {t:'PERMANENT',o:'Esign',s:'Reunión',v:1},
+    {t:'ACERCAMIENTO POST ICARE',o:'Arcoprime - Copec',s:'Reunión',v:10},
+    {t:'COCA COLA EMBONOR',o:'Coca Cola Embonor',s:'Propuesta Enviada',v:500000000},
+    {t:'REPONEDORES ECOVIDA',o:'Ecovida',s:'Reunión',v:0},
+    {t:'PERMANENT',o:'CMT Salud',s:'Reunión',v:0},
+    {t:'TRADE',o:'Arcor',s:'Reunión',v:0},
+    {t:'REPONEDORES',o:'Vendomatica',s:'Reunión',v:0},
+    {t:'CENTRO DE DISTRIBUCION',o:'Mattel',s:'Reunión',v:0},
+    {t:'MERCHANDISING',o:'Coca Cola Andina',s:'Reunión',v:0},
+    {t:'TRADE',o:'Vapretail',s:'Reunión',v:0},
+    {t:'REPONEDORES',o:'Vapretail',s:'Reunión',v:0},
+    {t:'COMERCIAL K',o:'Comercial K',s:'Reunión',v:0},
+    {t:'UNIVERSIDAD ADOLFO IBAÑEZ',o:'U. Adolfo Ibáñez',s:'Reunión',v:0},
+    {t:'DISECOM SUPPLY',o:'Grupo Saesa',s:'Propuesta Enviada',v:38000000},
+    {t:'OUTSOURCING LOGISTICA SALUD',o:'UC Christus',s:'Reunión',v:0},
+    {t:'E-MONEY CHILE',o:'E-Money Chile',s:'Reunión',v:0},
+    {t:'Reponedores',o:'Smiley Kids Food',s:'Reunión',v:0},
+    {t:'OPERACION LOGISTICA',o:'E-Center',s:'Reunión',v:0},
+    {t:'OPERACION LOGISTICA',o:'Icestar - Megafrio',s:'Reunión',v:0},
+    {t:'REPONEDORES',o:'Ambisa - Excell Chile',s:'Propuesta Enviada',v:24000000},
+    {t:'CHOFER',o:'Tecnopapel',s:'Reunión',v:0},
+    {t:'URSUS TROTTER',o:'Ursus Trotter',s:'Reunión',v:0},
+    {t:'OPERACIONES',o:'Xinergy',s:'Reunión',v:0},
+    {t:'STAND EXPONOR 2026',o:'Ohiggins Herramientas',s:'Reunión',v:0},
+    {t:'CENTRO LOGISTICO',o:'Prosiga',s:'Reunión',v:0},
+    {t:'HPDM ENTRETENCION',o:'HPDM Entretencion',s:'Propuesta Enviada',v:140000000},
+    {t:'KRAFT HEINZ',o:'Kraft Heinz',s:'Propuesta Enviada',v:6500000},
+    {t:'KRAFT HEINZ',o:'Kraft Heinz',s:'Reunión',v:0},
+    {t:'ECOFLOW',o:'Ecoflow',s:'Propuesta Enviada',v:11000000},
+    {t:'MOVA',o:'Mova',s:'Propuesta Enviada',v:24000000},
+    {t:'DISECOM TRADE',o:'Stanley Black & Decker',s:'Reunión',v:0},
+    {t:'LABORATORIO MAVER',o:'Laboratorio Maver',s:'Propuesta Enviada',v:7000000},
+    {t:'CCAF LOS ANDES',o:'CCAF Los Andes',s:'Reunión',v:0},
+    {t:'CRISTALCHILE',o:'Cristalchile',s:'Reunión',v:0},
+    {t:'PROVENTAS',o:'Prosegur',s:'Reunión',v:0},
+    {t:'REPONEDORES',o:'Treck S.A.',s:'Reunión',v:0},
+    {t:'Licitación Gestión F&P',o:'Puig',s:'Propuesta Enviada',v:40000000},
+    {t:'PUIG',o:'Puig',s:'Propuesta Enviada',v:0},
+    {t:'EQUIPO DE VENTAS',o:'Experian',s:'Ganado',v:15000000},
+    {t:'DISECOM D&P',o:'Yura Cementos Sur Peru',s:'Ganado',v:9000000},
+    {t:'FFVV BCI PAGO',o:'Banco BCI',s:'Ganado',v:90000000},
+    {t:'Personal Externo — Continuidad',o:'Banco Estado',s:'Ganado',v:500000000},
+    {t:'EQUIPO DE VENTAS',o:'Claro Chile',s:'Ganado',v:200000000},
+    {t:'FUERZA DE VENTAS',o:'AJE Chile',s:'Ganado',v:15000000},
+    {t:'MATERIAL POP',o:'Conecatdos',s:'Ganado',v:2200000},
+    {t:'TAPAGOTERAS',o:'Henkel',s:'Ganado',v:350000},
+    {t:'ALMACENAJE TRANSPORTE MAQUILA',o:'Nestlé',s:'Ganado',v:17000000},
+    {t:'Reponedor vendedor zona sur',o:'Tecnigen',s:'Ganado',v:3500000},
+    {t:'AUDISIS',o:'Smiley Kids Food',s:'Ganado',v:340000},
+    {t:'Disecom Traslado Muebles',o:'Smiley Kids Food',s:'Ganado',v:600000},
+    {t:'BUSQUEDA EJECUTIVO DE VENTAS',o:'Socomed',s:'Ganado',v:1000000},
+    {t:'Externalización',o:'Grupo Kameid',s:'Ganado',v:15000000},
+    {t:'Permanent',o:'AJE Chile',s:'Ganado',v:3000000},
+  ],
+  'Jesus Montoya': [
+    /* ── Pipeline real: Trade MKT + Supply Chain — PipeDrive 26 jun 2026 ──
+       Etapas: Prospecto(6) · Contacto(7) · Con tarea→Contacto(1) · Presupuestado→Propuesta Enviada(1)
+       0 reuniones realizadas · 0 ganados ── */
+    {t:'Dolly s.a. — Thomas Smith',         o:'Dolly s.a.',                    s:'Prospecto',         v:0},
+    {t:'Forus S.A. — Alejandro Mosqueira',  o:'Forus S.A.',                    s:'Prospecto',         v:0},
+    {t:'Servicios Portuarios Reloncaví',     o:'Servicios Portuarios R.',        s:'Prospecto',         v:0},
+    {t:'Sakura — María José Zepeda Véliz',  o:'Sakura',                        s:'Prospecto',         v:0},
+    {t:'SP Digital — Nicolás Flores',        o:'SP Digital',                    s:'Prospecto',         v:0},
+    {t:'ISESA S.A. — Enrique Fuentes',       o:'ISESA S.A.',                    s:'Prospecto',         v:0},
+    {t:'Comercializadora Los Robles Ltda.',  o:'Comercializadora Los Robles',   s:'Contacto',          v:0},
+    {t:'Supermercados Lily',                 o:'Supermercados Lily',             s:'Contacto',          v:0},
+    {t:'Curifor S.A. — Andrés J. Toro',     o:'Curifor S.A.',                  s:'Contacto',          v:0},
+    {t:'VSPT Wine Group — B. Marisio',       o:'VSPT Wine Group',               s:'Contacto',          v:0},
+    {t:'Vigfor Spa — Felipe Farfán',         o:'Vigfor Spa',                    s:'Contacto',          v:0},
+    {t:'Hytera Latinoamérica — L. Moreira',  o:'Hytera Latinoamérica',         s:'Contacto',          v:0},
+    {t:'(Contacto — 7mo deal)',               o:'—',                            s:'Contacto',          v:0},
+    {t:'Farmacias Ahumada — Paula Leonard',  o:'Farmacias Ahumada',             s:'Contacto',          v:0},
+    {t:'EDGEWELL — Presupuestado',           o:'EDGEWELL',                      s:'Propuesta Enviada', v:10354080},
+  ],
+  'Andres Montoya': [
+    {t:'LICITACION PROMOTORES 2026',o:'Motorola Chile',s:'Negociación',v:165000000},
+    {t:'PRESENTACION DISECOM',o:'Loreal',s:'Reunión',v:1},
+    {t:'BANCO ITAU',o:'Banco Itaú',s:'Propuesta Enviada',v:11500000},
+    {t:'Presentación british american tobacco',o:'British American Tobacco',s:'Reunión',v:0},
+    {t:'LICITACION PROMOTORES GT',o:'Loreal',s:'Ganado',v:700000000},
+    {t:'LICITACION TUI 2026',o:'Banco Santander',s:'Ganado',v:50000000},
+    {t:'[Post-Venta] LICITACION PROMOTORES',o:'Loreal',s:'Ganado',v:0},
+  ],
+  'Felipe Campos': [
+    {t:'Inverlar',o:'Inverlar',s:'Propuesta Enviada',v:2765000},
+    {t:'Haleon',o:'Haleon',s:'Propuesta Enviada',v:5000000},
+    {t:'inverlar GP',o:'Inverlar',s:'Propuesta Enviada',v:7655202},
+    {t:'Afex',o:'Afex',s:'Propuesta Enviada',v:771603},
+    {t:'Afex',o:'Afex',s:'Propuesta Enviada',v:3596000},
+    {t:'Almacenamiento de POP',o:'Adidas',s:'Negociación',v:13000000},
+    {t:'Integral 360',o:'Integral 360',s:'Ganado',v:1500000},
+    {t:'Bravo y Hermanos',o:'Bravo y Hermanos',s:'Ganado',v:864000},
+  ],
+  'Francisca Musso': [
+    {t:'MATERIAL POP',o:'Asus',s:'Ganado',v:640000},
+    {t:'BÚSQUEDA PROGRAMADOR INFORMÁTICO',o:'Otic Proforma',s:'Ganado',v:1002500},
+    {t:'RECLUTAMIENTO P.R',o:'Tecnopapel',s:'Ganado',v:1500000},
+    {t:'TRANSPORTE DE COOLER',o:'Colun',s:'Ganado',v:115000},
+    {t:'METRO TREND IMPRESIÓN E IMPLEMENTACIÓN',o:'Caso & CIA',s:'Ganado',v:3868000},
+    {t:'AFICHE LOGO COLUN RIO BUENO',o:'Colun',s:'Ganado',v:416000},
+    {t:'AFICHE LOGO COLUN RIO BUENO (Post-Venta)',o:'Colun',s:'Ganado',v:763000},
+    {t:'ENVÍO PAQUETES IQUIQUE Y ANTOFAGASTA',o:'Colun',s:'Ganado',v:106100},
+    {t:'DESPACHO COOLER ESPACIO RIESCO',o:'Colun',s:'Ganado',v:345000},
+    {t:'ENVIO ETIQUETAS QUESO RANCO BIOBIO',o:'Colun',s:'Ganado',v:40000},
+    {t:'DESPACHO BULTOS LA SERENA',o:'Colun',s:'Ganado',v:123000},
+    {t:'DESPACHO COOLER LA FLORIDA',o:'Colun',s:'Ganado',v:310000},
+    {t:'ENVÍO MINI EXHIBIDORES',o:'Colun',s:'Ganado',v:200200},
+    {t:'DESPACHO STICKERS TELETÓN',o:'Colun',s:'Ganado',v:386250},
+    {t:'DESPACHO COOLER',o:'Colun',s:'Ganado',v:285000},
+    {t:'ENVÍO DE CATÁLOGOS',o:'Colun',s:'Ganado',v:643000},
+    {t:'RETIRO CAJAS SAN BERNARDO',o:'Colun',s:'Ganado',v:115000},
+    {t:'Búsqueda Jefe de TI',o:'Tecnopapel',s:'Ganado',v:3100000},
+    {t:'IMPLEMENTACIÓN',o:'Caso & CIA',s:'Ganado',v:3369900},
+    {t:'TRASLADO DE 15 COOLERS',o:'Minerva Foods',s:'Ganado',v:3200000},
+    {t:'BÚSQUEDA PRODUCT MANAGER',o:'Sea Garden',s:'Ganado',v:2250000},
+    {t:'DESINSTALACIÓN Y TRASLADO ESPACIO RIESCO',o:'Colun',s:'Ganado',v:462500},
+    {t:'ALMACENAMIENTO 15 COOLER',o:'Minerva Foods',s:'Ganado',v:337602},
+    {t:'ENVIO STICKERS TELETÓN 2',o:'Colun',s:'Ganado',v:117500},
+    {t:'ENVÍO BANDEJAS TALCA',o:'Colun',s:'Ganado',v:700000},
+    {t:'ENVIO STICKERS QUESO',o:'Colun',s:'Ganado',v:63200},
+    {t:'FLYER Y SINTRA LA UNIÓN',o:'Colun',s:'Ganado',v:157800},
+    {t:'TRASLADO 3 COOLERS MOVISTAR ARENA',o:'Colun',s:'Ganado',v:385500},
+    {t:'BRANDING Y DESPACHO COOLERS',o:'Minerva Foods',s:'Ganado',v:5215350},
+    {t:'Envío stickers queso Coyhaique',o:'Colun',s:'Ganado',v:154500},
+    {t:'ENVIO STICKERS TELETÓN TEMUCO',o:'Colun',s:'Ganado',v:58000},
+    {t:'ENVIO 7 COOLER A BELLOTO',o:'Colun',s:'Ganado',v:626500},
+    {t:'2 LOGO ACRÍLICO TEMUCO Y RIO BUENO',o:'Colun',s:'Ganado',v:934490},
+    {t:'ENVIO CUADERNOS',o:'Colun',s:'Ganado',v:964000},
+    {t:'ENVÍO PECHERAS A TALCA',o:'Colun',s:'Ganado',v:56700},
+    {t:'ENVÍO STICKERS QUESOS CHILLÁN',o:'Colun',s:'Ganado',v:72500},
+    {t:'CARROS Y CANASTOS DE SUPERMERCADO',o:'Colun',s:'Ganado',v:2326000},
+  ],
+  'Roberto Montoya': [],
+};
+
+/* ─── Helpers ─── */
+function fM(v){if(!v||v===0)return '$0';const a=Math.abs(v);if(a>=1e9)return '$'+(v/1e9).toFixed(1)+'B';if(a>=1e6)return '$'+(v/1e6).toFixed(1)+'M';if(a>=1e3)return '$'+(v/1e3).toFixed(0)+'K';return '$'+v;}
+function stgBadge(s){const c={Negociación:'#a78bfa','Propuesta Enviada':'#60a5fa','Reunión':'#34d399',Contacto:'#94a3b8',Prospecto:'#f59e0b'};return `<span style="background:${c[s]||'#64748b'}22;color:${c[s]||'#64748b'};padding:2px 8px;border-radius:4px;font-size:.75rem">${s}</span>`;}
+function mkChart(id,cfg){const el=document.getElementById(id);if(!el)return null;const ex=Chart.getChart(el);if(ex)ex.destroy();return new Chart(el,cfg);}
+function baseOpts(indexAxis='x'){return {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:FONT}}},scales:{x:{grid:{color:indexAxis==='y'?'transparent':GRIDLINE},ticks:{color:FONT,font:{size:11}}},y:{grid:{color:indexAxis==='y'?GRIDLINE:GRIDLINE},ticks:{color:FONT,font:{size:11}}}}};}
+function fN(v){return v!=null&&!isNaN(v)?Math.round(v).toLocaleString('es-CL'):'—';}
+function fP(v){return v!=null&&!isNaN(v)?parseFloat(v).toFixed(1)+'%':'—';}
+function fX(v){return v!=null&&!isNaN(v)?parseFloat(v).toFixed(2)+'×':'—';}
+function cK(v,m){if(v==null||isNaN(v)||m==null||m===0)return 'grey';const p=v/m;return p>=1?'green':p>=0.7?'yellow':'red';}
+function vc(c){return c==='green'?'#22c55e':c==='yellow'?'#eab308':c==='red'?'#ef4444':'#64748b';}
+function pb(v,m){const p=Math.min(100,m>0?Math.round(v/m*100):0);const col=vc(cK(v,m));return `<div class="pb"><div style="height:100%;width:${p}%;background:${col};border-radius:99px;transition:width .3s"></div></div>`;}
+function smf(c){return c==='green'?'✅ ':c==='yellow'?'⚠️ ':c==='red'?'🔴 ':'';}
+
+/* ─── TAB SWITCH ─── */
+function sw(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(id==='bdm'){
+    /* Si _DD ya está cargado, renderiza de inmediato con data real */
+    setTimeout(()=>renderBDM(),50);
+    /* Si no, disparar fetch y re-renderizar al terminar */
+    if(!_DD) initDashboard();
+  }
+  if(id==='pipe')setTimeout(()=>renderPipeline(),50);
+  if(id==='gp')setTimeout(()=>initGP(),50);
+  if(id==='dash')setTimeout(()=>initDashboard(),50);
+}
+
+/* ─── ALERT ─── */
+function checkAlert(){
+  const diff=Math.ceil((new Date('2026-06-30')-new Date())/(864e5));
+  const b=document.getElementById('alertBanner'),t=document.getElementById('alertTxt');
+  if(diff>=0){t.textContent=`Evaluación 30 días de Heinar Lazcano vence el 30 junio — quedan ${diff} día${diff!==1?'s':''}.`;b.classList.add('show');}
+  else if(diff<0){t.textContent=`Evaluación de Heinar venció hace ${Math.abs(diff)} días — verificar documentación en RRHH.`;b.classList.add('show');}
+}
+
+/* ═══════════════════════════════════════════════
+   TAB 1: MIS KPIs (alineado a Descriptor cargo §3)
+═══════════════════════════════════════════════ */
+function renderKPIs(){
+  const h=D.heinar,gp=D.gp;
+  const pct=D.diaActual/D.diasMes; // avance del mes
+
+  /* 10 KPIs del Descriptor de Cargo */
+  const kpis=[
+    {
+      n:1, name:'Pipeline Ponderado Equipo BDM',
+      desc:'Valor total del pipeline activo ponderado por probabilidad de cierre',
+      v:D.ratio, m:3, f:'x',
+      real:D.weighted, realFmt:fM(D.weighted), meta:'≥ 3× cuota mensual',
+      proy:(D.ratio/pct).toFixed(2),
+      calc:`Σ(Valor deal × % probabilidad etapa) ÷ Cuota mensual ($274M)<br>
+        <span style="color:#64748b">Pesos: Negociación 90% · Propuesta 50% · Reunión 25% · Contacto 10% · Prospecto 5%</span><br>
+        <span style="color:#60a5fa">${fM(D.weighted)} ÷ $274M = ${D.ratio}×</span>`
+    },
+    {
+      n:2, name:'Nuevos Clientes Firmados por Mes',
+      desc:'Contratos nuevos cerrados por el equipo BDM',
+      v:D.wonMonth, m:3, f:'n',
+      real:D.wonMonth, realFmt:fN(D.wonMonth)+' clientes', meta:'≥ 3 nuevos/mes (desde mes 3)',
+      proy:Math.round(D.wonMonth/pct),
+      calc:`Deals con status=won y won_time dentro del mes en curso<br>
+        <span style="color:#64748b">Fuente: Pipeline GP (pipeline_id=2), todos los usuarios</span><br>
+        <span style="color:#60a5fa">${D.wonMonth} contratos firmados en junio 2026</span>`
+    },
+    {
+      n:3, name:'Tasa de Conversión Reunión → Propuesta',
+      desc:'% de reuniones calificadas que generan propuesta formal enviada',
+      v:h.conv, m:40, f:'p',
+      real:h.conv, realFmt:fP(h.conv), meta:'≥ 40%',
+      proy:Math.min(100,Math.round(h.conv*1.05)),
+      calc:`Deals en Propuesta ÷ (Deals en Reunión + Deals en Propuesta) × 100<br>
+        <span style="color:#64748b">Usuario: Heinar Lazcano · stages Reunión (id=8) y Propuesta (id=9)</span><br>
+        <span style="color:#60a5fa">${h.propuesta} ÷ (${h.reunion}+${h.propuesta}) = ${h.conv}%</span>`
+    },
+    {
+      n:4, name:'Win Rate del Equipo',
+      desc:'% de propuestas enviadas que resultan en contrato firmado',
+      v:D.winRate, m:20, f:'p',
+      real:D.winRate, realFmt:fP(D.winRate), meta:'≥ 20%',
+      proy:D.winRate,
+      calc:`Deals ganados ÷ (Deals ganados + Deals perdidos) × 100 — acumulado histórico<br>
+        <span style="color:#64748b">Fuente: todos los deals won/lost · Pipeline GP · todos los usuarios</span><br>
+        <span style="color:#60a5fa">${D.wonTotal} ganados ÷ ${D.wonTotal+D.lostTotal} cerrados = ${D.winRate}%</span>`
+    },
+    {
+      n:5, name:'Actividad Mínima por BDM',
+      desc:'Reuniones efectivas y propuestas enviadas por BDM al mes',
+      v: Math.min(h.reunion/20, h.propuesta/10)*100, m:100, f:'p',
+      real:`${fN(h.reunion)} reuniones · ${fN(h.propuesta)} propuestas`, realFmt:`${h.reunion} reun / ${h.propuesta} prop`, meta:'≥ 20 reuniones y ≥ 10 propuestas/mes/BDM',
+      proy: `${Math.round(h.reunion/pct)} reun / ${Math.round(h.propuesta/pct)} prop proy.`,
+      calc:`Reuniones efectivas realizadas al mes + Propuestas enviadas al mes — ambas métricas deben cumplirse<br>
+        <span style="color:#64748b">Fuente: stage Reunión (id=8) y stage Propuesta (id=9) · Pipeline GP · por usuario</span><br>
+        <span style="color:#60a5fa">Heinar: ${h.reunion}/20 reuniones · ${h.propuesta}/10 propuestas</span>`
+    },
+    {
+      n:6, name:'% Leads Calificados sobre Total Ingresados',
+      desc:'Leads (Growth Partners + inbound) que cumplen criterio y son asignados a BDM',
+      v:null, m:60, f:'p',
+      real:'Sin datos', realFmt:'—', meta:'≥ 60% de leads calificados',
+      proy:'—',
+      calc:`Leads que cumplen criterio BANT ÷ Total leads recibidos (GP + inbound) × 100<br>
+        <span style="color:#64748b">Requiere campo "calificado" en PipeDrive o reporte de Growth Partners</span><br>
+        <span style="color:#64748b">Pendiente: definir criterio ICP documentado y campo en PipeDrive</span>`
+    },
+    {
+      n:7, name:'Tiempo de Asignación Leads Inbound',
+      desc:'Horas hábiles entre recepción del lead y asignación formal a BDM en PipeDrive',
+      v:null, m:100, f:'p',
+      real:'Sin datos', realFmt:'—', meta:'≤ 48 horas hábiles · 100% de los leads',
+      proy:'—',
+      calc:`% leads asignados en ≤48h ÷ Total leads inbound recibidos × 100<br>
+        <span style="color:#64748b">Requiere timestamp de creación del deal vs timestamp de asignación a usuario</span><br>
+        <span style="color:#64748b">Pendiente: activar campo "Fecha asignación" en PipeDrive</span>`
+    },
+    {
+      n:8, name:'Clientes Activos con ≥ 2 Servicios del Grupo',
+      desc:'% de clientes top 50 con contrato vigente en ≥ 2 verticales del Grupo Progestion',
+      v:null, m:40, f:'p',
+      real:'Sin datos', realFmt:'—', meta:'≥ 40% al cierre Q4 2026',
+      proy:'—',
+      calc:`Clientes activos con ≥2 servicios distintos ÷ Total clientes activos × 100<br>
+        <span style="color:#64748b">Requiere cruce entre PipeDrive y sistema de contratos por vertical (ERP)</span><br>
+        <span style="color:#64748b">Meta Q4 2026 — revisión mensual con KAMs y Gerentes Operacionales</span>`
+    },
+    {
+      n:9, name:'Evaluaciones 90 Días BDMs Aplicadas',
+      desc:'% de evaluaciones formales (día 30, 60 y 90) realizadas y documentadas en RRHH',
+      v:null, m:100, f:'p',
+      real:'Heinar: eval. día 30', realFmt:'🚨 Vence 30 jun', meta:'100% de evaluaciones aplicadas',
+      proy:'—',
+      calc:`Evaluaciones realizadas (día 30, 60, 90) ÷ Evaluaciones requeridas × 100<br>
+        <span style="color:#f87171;font-weight:600">⚠ Heinar Lazcano — evaluación día 30 vence el 30 de junio 2026</span><br>
+        <span style="color:#64748b">KPIs mínimos evaluación: WR≥20% · Propuestas≥10 · Reuniones≥20 · Contactos≥300</span>`
+    },
+    {
+      n:10, name:'Forecast Semanal Presentado en N10',
+      desc:'% de semanas con forecast ponderado presentado al GC sin omisiones',
+      v:null, m:100, f:'p',
+      real:'Sin registro', realFmt:'—', meta:'100% de semanas — sin omisiones',
+      proy:'—',
+      calc:`Semanas con N10 presentado ÷ Total semanas del mes × 100<br>
+        <span style="color:#64748b">Contenido N10: pipeline total ponderado · oportunidades a cerrar en 7 días · actividad real BDM</span><br>
+        <span style="color:#64748b">Frecuencia: semanal · Responsable: Felipe Campos → Gerente Comercial</span>`
+    },
+  ];
+
+  let g=0,y=0,r=0,nd=0;
+  kpis.forEach(k=>{const c=(k.v!=null&&!isNaN(k.v))?cK(k.v,k.m):'grey';if(c==='green')g++;else if(c==='yellow')y++;else if(c==='red')r++;else nd++;});
+  const tm=g+y+r, ov=tm>0?Math.round(g/tm*100):0;
+
+  /* Tarjetas resumen */
+  const sumCards=`
+    <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
+      <div style="background:#d1f5dc;border:1px solid #34c759;border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#1a7f3c">${g}</div><div style="font-size:.65rem;color:#248a42;font-weight:500">✅ EN META</div></div>
+      <div style="background:#fff3d1;border:1px solid #ff9f0a;border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#a05c00">${y}</div><div style="font-size:.65rem;color:#a05c00;font-weight:500">⚠️ RIESGO</div></div>
+      <div style="background:#ffd6d4;border:1px solid #ff3b30;border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#c41a1a">${r}</div><div style="font-size:.65rem;color:#c41a1a;font-weight:500">🔴 BAJO META</div></div>
+      <div style="background:#f5f5f7;border:1px solid rgba(0,0,0,0.08);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:1.3rem;font-weight:700;color:#aeaeb2">${nd}</div><div style="font-size:.65rem;color:#8e8e93">– SIN DATO</div></div>
+      <div style="background:linear-gradient(135deg,#e8f4fd,#f0f8ff);border:1px solid #b3d9f7;border-radius:10px;padding:10px 24px;text-align:center;margin-left:auto"><div style="font-size:1.3rem;font-weight:700;color:#0071e3">${ov}%</div><div style="font-size:.65rem;color:#0077ed">CUMPLIMIENTO</div></div>
+    </div>`;
+
+  /* Tarjetas Real vs Objetivo */
+  const rvCards=kpis.map(k=>{
+    const c=(k.v!=null&&!isNaN(k.v))?cK(k.v,k.m):'grey';
+    const dv=k.v!=null&&!isNaN(k.v)?k.f==='p'?fP(k.v):k.f==='x'?fX(k.v):fN(k.v):'—';
+    const uid='calc-'+k.n;
+    return`<div class="kpi-card" style="border-left:3px solid ${vc(c)}">
+      <div class="kpi-card-top">
+        <div class="kpi-n">KPI ${k.n} · ${smf(c)}${c==='green'?'En meta':c==='yellow'?'En riesgo':c==='red'?'Bajo meta':'Sin dato'}</div>
+        <div class="kpi-name">${k.name}</div>
+        <div style="font-size:.72rem;color:var(--mu);margin-bottom:10px">${k.desc}</div>
+        <div class="kpi-vals">
+          <div>
+            <div style="font-size:.63rem;color:var(--mu);text-transform:uppercase;letter-spacing:.04em">Real</div>
+            <div class="kpi-real" style="color:${vc(c)}">${dv}</div>
+          </div>
+          <div class="kpi-sep">·</div>
+          <div>
+            <div style="font-size:.63rem;color:var(--mu);text-transform:uppercase;letter-spacing:.04em">Objetivo</div>
+            <div class="kpi-obj">${k.meta}</div>
+          </div>
+          ${k.proy&&k.proy!=='—'?`<div class="kpi-sep">·</div><div><div style="font-size:.63rem;color:#93c5fd;text-transform:uppercase;letter-spacing:.04em">Proy. cierre</div><div class="kpi-obj" style="color:#60a5fa">${typeof k.proy==='number'?k.f==='p'?k.proy+'%':k.f==='x'?k.proy+'×':k.proy:k.proy}</div></div>`:''}
+        </div>
+        ${k.v!=null&&!isNaN(k.v)?pb(k.v,k.m):''}
+      </div>
+      <div class="kpi-card-bot">
+        <button onclick="const e=document.getElementById('${uid}');e.style.display=e.style.display==='none'?'block':'none'"
+          style="background:var(--s2);border:1px solid var(--bd);color:var(--mu);border-radius:4px;padding:3px 10px;font-size:.67rem;cursor:pointer">
+          🔍 Ver cálculo
+        </button>
+      </div>
+      <div id="${uid}" style="display:none;padding:12px 16px;background:var(--bg);border-top:1px solid var(--bd);font-size:.74rem;color:var(--tx);line-height:1.8">${k.calc}</div>
+    </div>`;
+  }).join('');
+
+  /* Evolutivo general */
+  const evolChart=`
+    <div class="g2 gap">
+      <div class="cc"><div class="ct">Evolutivo — Pipeline Ponderado (×cuota)</div><div style="height:180px;position:relative"><canvas id="cKpiPipe"></canvas></div></div>
+      <div class="cc"><div class="ct">Evolutivo — Win Rate & Nuevos Clientes</div><div style="height:180px;position:relative"><canvas id="cKpiWR"></canvas></div></div>
+    </div>`;
+
+  document.getElementById('kpiContent').innerHTML=sumCards+evolChart+`<div class="st">Detalle KPIs — Real vs Objetivo vs Proyección</div><div class="g2 gap">${rvCards}</div>`;
+
+  /* Render charts */
+  setTimeout(()=>{
+    mkChart('cKpiPipe',{type:'line',data:{labels:HX.meses,datasets:[
+      {label:'Pipeline ×cuota',data:HX.pipeline,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.15)',fill:true,tension:.4,pointRadius:4},
+      {label:'Meta (3×)',data:HX.meses.map(()=>3),borderColor:'#22c55e',borderDash:[6,3],pointRadius:0,tension:0}
+    ]},options:{...baseOpts(),plugins:{legend:{labels:{color:FONT,font:{size:11}}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:11}}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:11},callback:v=>v+'×'}}}}});
+    mkChart('cKpiWR',{type:'line',data:{labels:HX.meses,datasets:[
+      {label:'Win Rate %',data:HX.winRate,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.1)',fill:true,tension:.4,pointRadius:4,yAxisID:'y'},
+      {label:'Nuevos clientes',data:HX.newClients,borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,.1)',fill:true,tension:.4,pointRadius:4,yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:FONT,font:{size:11}}}},scales:{
+      x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:11}}},
+      y:{position:'left',grid:{color:GRIDLINE},ticks:{color:'#f87171',font:{size:11},callback:v=>v+'%'}},
+      y1:{position:'right',grid:{display:false},ticks:{color:'#4ade80',font:{size:11}}}
+    }}});
+  },100);
+}
+
+/* ═══════════════════════════════════════════════
+   TAB 2: SEGUIMIENTO BDM
+═══════════════════════════════════════════════ */
+function renderBDM(){
+  const user=document.getElementById('selUser')?.value||'Heinar Lazcano';
+  const selMonth=document.getElementById('monthPicker')?.value||''; /* "2026-06" — filtra por mes de creación del deal */
+  const hx=BDM_HX[user]||BDM_HX['Heinar Lazcano'];
+
+  /* ── Filtrar dropdown empresa según el vendedor seleccionado ──
+     Solo muestra empresas donde ese BDM tiene deals registrados.
+     Si la empresa actual no está en la lista del vendedor, se resetea. */
+  const selEmp=document.getElementById('selEmpresa');
+  if(selEmp){
+    const empList=hx.empresas||Object.keys(EMPRESA_DATA).filter(k=>k!=='');
+    const curVal=selEmp.value;
+    selEmp.innerHTML=`<option value="">Todas las empresas de ${user}</option>`
+      +empList.map(e=>`<option value="${e}"${e===curVal?'selected':''}>${e}</option>`).join('');
+    // Si la empresa que estaba seleccionada no pertenece a este BDM → reset
+    if(curVal && !empList.includes(curVal)) selEmp.value='';
+  }
+
+  const empresa=selEmp?.value||'';
+
+  /* Prioridad de datos: vendorEmpData (datos reales BDM x empresa) > EMPRESA_DATA global */
+  const vendorEmpData = empresa && hx.empresaData ? hx.empresaData[empresa] : null;
+  const ed = EMPRESA_DATA[empresa]||EMPRESA_DATA[''];
+  // Para funnel y KPIs usamos los datos del vendedor en esa empresa cuando existen
+  const activeEd = vendorEmpData || ed;
+
+  /* Histórico evolutivos: SIEMPRE del vendedor. Empresa solo afecta KPIs/embudo/valor. */
+  const chartHx=hx;
+
+  /* ── KPIs en tiempo real desde _DD — estado actual del pipeline, sin filtro de mes ──
+     El mes no se aplica aquí: un deal creado en Mayo que está en Propuesta en Junio SÍ cuenta. */
+  const last=hx.meses.length-1;
+  const wr=empresa?(activeEd.winRate??ed.winRate):hx.winRate[last];
+  let pr, re, co, coActual, rr;
+  if(_DD && _DD.length){
+    /* Estado actual del pipeline 2 (GRUPO PROGESTION) — SIN filtro de mes.
+       Un deal creado en Mayo que hoy está en Propuesta Enviada SÍ cuenta en todos los KPIs. */
+    const base = _DD.filter(d=>d.pid===2 && d.own===user && d.st==='open'
+                              && (!selMonth||d.add.startsWith(selMonth))
+                              && (empresa?d.emp===empresa:true));
+    /* Propuestas Enviadas: deals actualmente en Propuesta Enviada o Negociación */
+    pr       = base.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
+    /* Reuniones Generadas: deals actualmente en Reunión, Propuesta Enviada o Negociación */
+    re       = base.filter(d=>['Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
+    /* Total Contactados: deals actualmente en Contacto o etapas superiores */
+    co       = base.filter(d=>['Contacto','Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
+    /* En Contacto: deals actualmente en etapa Contacto */
+    coActual = base.filter(d=>d.stg==='Contacto').length;
+    /* En Agenda: deals actualmente en etapa Reunión */
+    rr       = base.filter(d=>d.stg==='Reunión').length;
+  } else {
+    /* Fallback datos estáticos BDM_HX */
+    pr       = empresa?(activeEd.propuestas??ed.propuestas):hx.propuestas[last];
+    re       = empresa?(activeEd.reuniones??ed.reuniones):hx.reuniones[last];
+    co       = empresa?(activeEd.contactos??ed.contactos):hx.contactos[last];
+    coActual = empresa
+      ? (activeEd.funnel?.find(x=>x.s==='Contacto')?.n ?? 0)
+      : (hx.empresaData ? Object.values(hx.empresaData).reduce((s,e)=>s+(e.funnel?.find(x=>x.s==='Contacto')?.n||0),0) : 0);
+    rr       = empresa && hx.empresaData?.[empresa]
+      ? (hx.empresaData[empresa].funnel?.find(x=>x.s==='Reunión')?.n || 0)
+      : Object.values(hx.empresaData||{}).reduce((s,e2)=>s+(e2.funnel?.find(x=>x.s==='Reunión')?.n||0),0);
+  }
+  const rrOpen=rr, rrWon=0; /* alias para compatibilidad con template literal del card */
+  const cWR=cK(wr,20),cP=cK(pr,10),cR=cK(re,20),cC=cK(co,300);
+
+  /* Etiqueta del filtro activo */
+  const lbl=document.getElementById('funnelLabel');
+  const edLabel=ed.label||empresa||'Todas';
+  const ctxLabel=empresa&&user?`${edLabel} · ${user}`:empresa?edLabel:user;
+  if(lbl)lbl.textContent='· '+ctxLabel;
+
+  function kcard(lbl2,v,fmt,m,meta,c){
+    return`<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid ${vc(c)};border-radius:10px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div class="lbl">${lbl2}</div>
+        <span class="semafor ${c}"></span><span class="badge ${c}" style="font-size:.65rem">${c==='green'?'Meta':c==='yellow'?'Riesgo':c==='red'?'Bajo':'Sin dato'}</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:12px">
+        <div class="val" style="color:${vc(c)}">${fmt(v)}</div>
+        <div style="font-size:.75rem;color:var(--mu);padding-bottom:4px">/ ${m} meta</div>
+      </div>
+      <div class="meta">${meta}</div>
+      ${pb(v,m)}
+    </div>`;
+  }
+
+  document.getElementById('bdmCards').innerHTML=[
+    kcard('Win Rate',wr,fP,20,'Meta: ≥ 20%',cWR),
+    kcard('Propuestas Enviadas',pr,fN,10,'Meta: ≥ 10 / mes',cP),
+    kcard('Reuniones Generadas',re,fN,20,'Total: Reunión + Propuesta + Neg. + Ganados',cR),
+    kcard('Total Contactados',co,fN,300,'Contacto → Reunión → Propuesta → Neg. + Ganados',cC),
+    `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #3b82f6;border-radius:10px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div class="lbl">En Contacto</div>
+        <span style="font-size:.75rem">✉️</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:6px">
+        <div style="font-size:2rem;font-weight:800;color:#3b82f6;line-height:1">${fN(coActual)}</div>
+        <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">deals<br>en Contacto</div>
+      </div>
+      <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Contacto (correos activos)${empresa?' · filtrado por empresa':''}</div>
+    </div>`,
+    `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #8b5cf6;border-radius:10px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div class="lbl">En Agenda (Reunión)</div>
+        <span style="font-size:.75rem">📅</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:6px">
+        <div style="font-size:2rem;font-weight:800;color:#8b5cf6;line-height:1">${fN(rr)}</div>
+        <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">en etapa<br>Reunión</div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:.72rem;color:var(--mu);margin-top:4px">
+        <span>📋 ${rrOpen} pendientes</span>
+        ${rrWon>0?`<span>✅ ${rrWon} ganados</span>`:''}
+      </div>
+      <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Reunión (pendientes de realizar)${empresa?' · filtrado por empresa':''}</div>
+    </div>`,
+  ].join('');
+
+  /* Tabla comparativa — si empresa tiene byUser, resalta deals en esa empresa */
+  /* ── Tabla de deals individuales por cliente y etapa del embudo ── */
+  const stgBadgeColors={'Prospecto':'#64748b','Contacto':'#3b82f6','Reunión':'#8b5cf6','Propuesta Enviada':'#f59e0b','Negociación':'#22c55e'};
+  const stgOrder=['Negociación','Propuesta Enviada','Reunión','Contacto','Prospecto'];
+  function stgBadge(s){const c=stgBadgeColors[s]||'#94a3b8';return`<span style="display:inline-block;padding:2px 9px;border-radius:99px;background:${c}22;color:${c};font-weight:700;font-size:.72rem;white-space:nowrap">${s}</span>`;}
+
+  let vendorDeals = (VENDOR_DEALS[user]||[]);
+  // Filtrar por empresa si hay filtro activo
+  if(empresa) vendorDeals = vendorDeals.filter(d=>d.e===empresa);
+
+  const dealRows = vendorDeals.length > 0
+    ? [...vendorDeals]
+        .sort((a,b)=>stgOrder.indexOf(a.s)-stgOrder.indexOf(b.s))
+        .map(d=>`<tr>
+          <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td>
+          <td style="color:var(--mu);font-size:.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.o||'—'}</td>
+          <td style="font-size:.76rem;color:#0369a1;font-weight:600;white-space:nowrap">${d.own||d.rep||'—'}</td>
+          <td><span style="display:inline-block;padding:2px 7px;border-radius:99px;background:${(stgBadgeColors[d.e]||'#64748b')}18;color:var(--mu);font-size:.72rem">${d.e}</span></td>
+          <td>${stgBadge(d.s)}</td>
+          <td class="r" style="color:#60a5fa">${d.v>0?'$'+(d.v/1e6).toFixed(1)+'M':'—'}</td>
+          <td class="r" style="color:var(--mu);font-size:.75rem">${d.u||'—'}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="7" style="text-align:center;color:var(--mu);padding:20px;font-size:.82rem">
+        ${VENDOR_DEALS[user]&&VENDOR_DEALS[user].length===0
+          ? '⏳ Datos pendientes — el script de actualización corre hoy a las 6PM'
+          : 'Sin deals para este filtro'}
+      </td></tr>`;
+
+  document.getElementById('bdmClientesTable').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:5px 10px;background:rgba(37,99,235,.06);border-radius:6px;font-size:.72rem">
+      <span>Deals de <strong style="color:#60a5fa">${user}</strong>${empresa?' · <strong style="color:#f59e0b">'+empresa+'</strong>':''} · <strong>${vendorDeals.length} deals</strong></span>
+      <span style="color:var(--mu)">Actualizado: ${D.generated}</span>
+    </div>
+    <table class="tbl"><thead><tr>
+      <th>Nombre del deal</th>
+      <th>Organización</th>
+      <th>Propietario</th>
+      <th>Empresa GP</th>
+      <th>Etapa del embudo</th>
+      <th class="r">Valor</th>
+      <th class="r">Últ. actualización</th>
+    </tr></thead><tbody>${dealRows}</tbody></table>`;
+
+  const empByUser = ed.byUser||null;
+  const tablaTitle = empresa
+    ? `<div style="font-size:.7rem;color:var(--mu);margin-bottom:6px;padding:4px 8px;background:rgba(37,99,235,.08);border-radius:6px">
+        Tabla general de vendedores · <strong style="color:#60a5fa">${ed.label}</strong> destacada en columna extra</div>`
+    : '';
+  document.getElementById('bdmTable').innerHTML=tablaTitle+`<table class="tbl"><thead><tr>
+    <th>Usuario</th><th class="r">Win Rate <span style="color:var(--mu);font-weight:400">(≥20%)</span></th>
+    <th class="r">Propuestas <span style="color:var(--mu);font-weight:400">(≥10)</span></th>
+    <th class="r">Reuniones <span style="color:var(--mu);font-weight:400">(≥20)</span></th>
+    <th class="r">Contactos <span style="color:var(--mu);font-weight:400">(≥300)</span></th>
+    <th class="r">Pipeline CLP$</th>
+    ${empByUser?`<th class="r" style="color:#60a5fa">${ed.label}</th>`:''}
+  </tr></thead><tbody>
+  ${Object.entries(BDM_HX).map(([nm,hd])=>{
+    const l=hd.meses.length-1;
+    const w=hd.winRate[l],p=hd.propuestas[l],r=hd.reuniones[l],c=hd.contactos[l];
+    const pval=Object.values(hd.stageVal).reduce((a,b)=>a+b,0);
+    const empDeals=empByUser?empByUser[nm]||0:null;
+    return`<tr style="${nm===user?'background:rgba(37,99,235,.1);':''}" onclick="document.getElementById('selUser').value='${nm}';renderBDM()">
+      <td style="font-weight:600;cursor:pointer">${nm==='Heinar Lazcano'?'🔎 ':''}<span style="color:${nm===user?'#60a5fa':'inherit'}">${nm}</span></td>
+      <td class="r"><strong style="color:${vc(cK(w,20))}">${fP(w)}</strong>${pb(w,20)}</td>
+      <td class="r"><strong style="color:${vc(cK(p,10))}">${fN(p)}</strong>${pb(p,10)}</td>
+      <td class="r"><strong style="color:${vc(cK(r,20))}">${fN(r)}</strong>${pb(r,20)}</td>
+      <td class="r"><strong style="color:${vc(cK(c,300))}">${fN(c)}</strong>${pb(c,300)}</td>
+      <td class="r" style="color:#60a5fa">${fM(pval)}</td>
+      ${empByUser!==null?`<td class="r"><strong style="color:${empDeals>0?'#4ade80':'var(--mu)'}">${empDeals>0?empDeals+' deals':'—'}</strong></td>`:''}
+    </tr>`;
+  }).join('')}
+  </tbody></table>`;
+
+  /* ── EMBUDO SVG por etapa: datos en tiempo real desde _DD cuando disponible ── */
+  const BDM_FUNNEL_STGS=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
+  let funData;
+  if(_DD && _DD.length){
+    const empLabel=empresa?(EMPRESA_DATA[empresa]?.label||empresa):null;
+    /* Embudo solo pipeline 2 (GRUPO PROGESTION) — respeta filtro de mes */
+    const base=_DD.filter(d=>d.pid===2 && d.own===user && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)) && (empLabel?d.emp===empLabel:true));
+    funData=BDM_FUNNEL_STGS.map(s=>({s,n:base.filter(d=>d.stg===s).length}));
+  } else {
+    funData=activeEd.funnel||ed.funnel;
+  }
+  const maxN=Math.max(...funData.map(f=>f.n),1);
+  const stgColors=['#64748b','#3b82f6','#8b5cf6','#f59e0b','#22c55e'];
+  const rowH=44, gap=6, W=520;
+  const rows=funData.map((f,i)=>{
+    const pct=f.n/maxN;
+    const barW=Math.max(pct*W,40);
+    const x=(W-barW)/2;
+    const y=i*(rowH+gap);
+    const conv=i>0&&funData[i-1].n>0?Math.round(f.n/funData[i-1].n*100):100;
+    return`<g>
+      <rect x="${x}" y="${y}" width="${barW}" height="${rowH}" rx="6" fill="${stgColors[i]}" opacity=".85"/>
+      <text x="${W/2}" y="${y+rowH/2+5}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">${fN(f.n)} deals</text>
+      <text x="4" y="${y+rowH/2+5}" font-size="11" fill="#6e6e73">${f.s}</text>
+      ${i>0?`<text x="${W-4}" y="${y+rowH/2+5}" text-anchor="end" font-size="11" fill="#6e6e73">conv. ${conv}%</text>`:''}
+    </g>`;
+  }).join('');
+  const totalH=funData.length*(rowH+gap)-gap;
+  // Tabla por usuario si existe byUser en los datos de empresa
+  const byUserHTML = (activeEd.byUser||ed.byUser) ? `
+    <div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px">
+      <div style="font-size:.67rem;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Distribución por vendedor</div>
+      ${Object.entries(activeEd.byUser||ed.byUser||{}).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(51,65,85,.4)">
+          <span style="font-size:.78rem">${n}</span>
+          <span style="font-weight:700;color:#60a5fa;font-size:.82rem">${v} deals</span>
+        </div>`).join('')}
+      ${(activeEd.totalOpen??ed.totalOpen)!=null?`<div style="display:flex;gap:16px;margin-top:8px;font-size:.72rem;color:var(--mu)">
+        <span>✅ Ganados: <strong style="color:#4ade80">${activeEd.totalWon??ed.totalWon??0}</strong></span>
+        <span>📂 Abiertos: <strong style="color:#60a5fa">${activeEd.totalOpen??ed.totalOpen??0}</strong></span>
+        <span>❌ Perdidos: <strong style="color:#f87171">${activeEd.totalLost??ed.totalLost??0}</strong></span>
+      </div>`:''}
+    </div>` : '';
+  document.getElementById('funnelBDM').innerHTML=
+    `<svg viewBox="0 0 ${W} ${totalH}" width="100%" style="max-height:260px">${rows}</svg>${byUserHTML}`;
+
+  /* ── Tabla Reuniones por Deal ── */
+  const rdSTG_ORDER=['Ganado','Negociación','Propuesta Enviada','Reunión'];
+  const rdSTG_COLOR={'Ganado':'#22c55e','Negociación':'#a78bfa','Propuesta Enviada':'#60a5fa','Reunión':'#f59e0b'};
+  /* Deals con Reunión: usa _DD en tiempo real si disponible, sino REUNION_DEALS */
+  let reunDeals2;
+  const RD_STGS2 = ['Reunión','Propuesta Enviada','Negociación','Ganado'];
+  if(_DD && _DD.length){
+    reunDeals2 = _DD
+      .filter(d => d.pid===2 && d.own===user && (!selMonth||d.add.startsWith(selMonth)) && RD_STGS2.includes(d.stg))
+      .map(d => ({t:d.t, o:d.org||d.per||'—', emp:d.emp||'—', s:d.stg, v:d.val||0, u:d.add||''}));
+  } else {
+    reunDeals2 = (REUNION_DEALS[user]||[]).slice();
+  }
+  reunDeals2.sort((a,b)=>rdSTG_ORDER.indexOf(a.s)-rdSTG_ORDER.indexOf(b.s));
+  const rdGanados2  = reunDeals2.filter(d=>d.s==='Ganado').length;
+  const rdActivos2  = reunDeals2.filter(d=>d.s!=='Ganado').length;
+  const rdTotalVal2 = reunDeals2.reduce((s,d)=>s+(d.v||0),0);
+  const rdRows2 = reunDeals2.length > 0
+    ? reunDeals2.map(d=>{
+        const sc=rdSTG_COLOR[d.s]||'#64748b';
+        return `<tr style="border-bottom:1px solid var(--bd)">
+          <td style="padding:8px 12px;font-weight:600;font-size:.82rem;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td>
+          <td style="padding:8px 12px;color:var(--mu);font-size:.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.emp||'—'}</td>
+          <td style="padding:8px 12px"><span style="display:inline-block;padding:2px 9px;border-radius:99px;background:${sc}22;color:${sc};font-weight:700;font-size:.72rem;white-space:nowrap">${d.s}</span></td>
+          <td style="padding:8px 12px;text-align:right;color:${(d.v||0)>0?'#60a5fa':'var(--mu)'};font-size:.82rem">${(d.v||0)>0?'$'+((d.v>=1e6)?(d.v/1e6).toFixed(1)+'M':(d.v/1e3).toFixed(0)+'K'):'—'}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--mu);font-size:.82rem">Sin deals registrados</td></tr>`;
+  const rdEl2=document.getElementById('reunDealsTable');
+  if(rdEl2) rdEl2.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bd)">
+      <div style="font-size:.85rem;font-weight:700;color:var(--tx)">🤝 Deals con Reunión · <span style="color:#8b5cf6">${user}</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="background:#22c55e22;color:#22c55e;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">✅ ${rdGanados2} ganados</span>
+        <span style="background:#f59e0b22;color:#f59e0b;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">🤝 ${rdActivos2} activos</span>
+        ${rdTotalVal2>0?`<span style="background:#60a5fa22;color:#60a5fa;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">💰 $${(rdTotalVal2/1e6).toFixed(1)}M total</span>`:''}
+      </div>
+    </div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:2px solid var(--bd)">
+        <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Deal</th>
+        <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Empresa GP</th>
+        <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Etapa</th>
+        <th style="padding:7px 12px;text-align:right;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Valor</th>
+      </tr></thead>
+      <tbody>${rdRows2}</tbody>
+    </table></div>`;
+
+  /* Empresas GP por valor ganado
+     Sin filtro empresa: muestra todas las empresas del BDM (hx.empresas)
+     Con filtro empresa: muestra solo esa empresa                         */
+  const vendorEmpresas=hx.empresas||Object.keys(EMPRESA_DATA).filter(k=>k!=='');
+  let wonValData={};
+  if(empresa){
+    // Si el vendedor tiene datos propios para esta empresa, usar 0 (sin ganados reales aún)
+    // o el valor de ed.wonVal si no hay dato del vendedor
+    const wonV = vendorEmpData ? (vendorEmpData.wonTotal||0) : Object.values(ed.wonVal).reduce((a,b)=>a+b,0);
+    wonValData[edLabel]=wonV;
+  } else {
+    vendorEmpresas.forEach(e=>{
+      if(EMPRESA_DATA[e]) wonValData[e]=Object.values(EMPRESA_DATA[e].wonVal).reduce((a,b)=>a+b,0);
+    });
+  }
+  const empNames=Object.keys(wonValData);
+  const empVals=Object.values(wonValData);
+  const empPalette=['#3b82f6','#8b5cf6','#f59e0b','#22c55e','#f87171','#06b6d4','#ec4899','#84cc16','#fb923c','#a78bfa'];
+  const wonTitle=empresa?`Valor ganado · ${ed.label}`:`Valor ganado por empresa · ${user}`;
+  mkChart('cEmpresaVal',{type:'bar',data:{labels:empNames,datasets:[{label:'Valor ganado CLP$',data:empVals,backgroundColor:empPalette.slice(0,empNames.length),borderRadius:6}]},options:{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false},title:{display:true,text:wonTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},callback:v=>fM(v)}},y:{grid:{display:false},ticks:{color:FONT,font:{size:11}}}}}});
+
+  /* ── Clientes GP contactados por etapa — solo empresas del BDM seleccionado ── */
+  const empKeys=(hx.empresas||Object.keys(EMPRESA_DATA).filter(k=>k!==''));
+  const stgDef=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
+  const stgColors3=['#64748b','#3b82f6','#8b5cf6','#f59e0b','#22c55e'];
+  const dlC={anchor:'center',align:'center',color:'#fff',font:{weight:'bold',size:9},
+    display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0, formatter:v=>v};
+  mkChart('cClientesEtapa',{
+    type:'bar',
+    data:{
+      labels:empKeys.map(k=>EMPRESA_DATA[k].label),
+      datasets:stgDef.map((s,i)=>({
+        label:s,
+        backgroundColor:stgColors3[i],
+        borderRadius:3,
+        data:empKeys.map(k=>{
+          /* Si _DD disponible, usar conteo real del BDM en esa empresa */
+          if(_DD && _DD.length){
+            return _DD.filter(d=>d.own===user && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)) && d.emp===(EMPRESA_DATA[k].label||k) && d.stg===s).length;
+          }
+          const f=EMPRESA_DATA[k].funnel.find(x=>x.s===s);
+          return f?f.n:0;
+        }),
+        datalabels:dlC
+      }))
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:FONT,font:{size:10}}},
+        title:{display:true,text:`Clientes contactados por etapa · ${user}`,color:FONT,font:{size:11}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{color:FONT,font:{size:9}}},
+        y:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10}}}
+      }
+    }
+  });
+
+  /* Valor por etapa: empresa > vendedor */
+  const sv=empresa?(ed.stageVal||hx.stageVal):hx.stageVal;
+  const stageLabels=['Negociación','Prop. Enviada','Reunión','Contacto','Prospecto'];
+  const stageVals=[sv.Negociación,sv.PropuestaEnviada,sv.Reunión,sv.Contacto,sv.Prospecto];
+  const stageColors2=['#22c55e','#3b82f6','#8b5cf6','#f59e0b','#64748b'];
+
+  /* ── Gráficos evolutivos — usan chartHx (empresa si filtro activo, vendedor si no) ── */
+  const evolTitle=empresa?`Actividad mensual · ${ed.label}`:`Actividad mensual · ${user}`;
+  mkChart('cBdmEvol',{type:'line',data:{labels:chartHx.meses,datasets:[
+    {label:'Reuniones',data:chartHx.reuniones,borderColor:'#8b5cf6',tension:.4,pointRadius:4},
+    {label:'Propuestas',data:chartHx.propuestas,borderColor:'#3b82f6',tension:.4,pointRadius:4},
+    {label:'Meta reuniones (20)',data:chartHx.meses.map(()=>20),borderColor:'#8b5cf6',borderDash:[5,4],pointRadius:0},
+    {label:'Meta propuestas (10)',data:chartHx.meses.map(()=>10),borderColor:'#3b82f6',borderDash:[5,4],pointRadius:0},
+  ]},options:{...baseOpts(),plugins:{legend:{labels:{color:FONT,font:{size:10}}},title:{display:true,text:evolTitle,color:FONT,font:{size:11}}}}});
+
+  /* Valor por etapa CLP$ */
+  const valTitle=empresa?`Pipeline por etapa · ${ed.label}`:`Pipeline por etapa · ${user}`;
+  mkChart('cBdmVal',{type:'bar',data:{labels:stageLabels,datasets:[{label:'Valor CLP$',data:stageVals,backgroundColor:stageColors2,borderRadius:5}]},options:{...baseOpts(),plugins:{legend:{display:false},title:{display:true,text:valTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{display:false},ticks:{color:FONT,font:{size:10}}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},callback:v=>fM(v)}}}}});
+
+  /* Win Rate evolutivo */
+  const wrTitle=empresa?`Win Rate mensual · ${ed.label}`:`Win Rate mensual · ${user}`;
+  mkChart('cBdmWR',{type:'line',data:{labels:chartHx.meses,datasets:[
+    {label:'Win Rate %',data:chartHx.winRate,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.15)',fill:true,tension:.4,pointRadius:4},
+    {label:'Meta (20%)',data:chartHx.meses.map(()=>20),borderColor:'#22c55e',borderDash:[6,3],pointRadius:0}
+  ]},options:{...baseOpts(),plugins:{legend:{labels:{color:FONT,font:{size:10}}},title:{display:true,text:wrTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10}}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},callback:v=>v+'%'}}}}});
+
+  /* Actividad por etapas — embudo completo apilado con números en cada segmento */
+  const stg=chartHx.stages||{
+    Prospecto:chartHx.meses.map(()=>0),
+    Contacto:chartHx.contactos,
+    Reunion:chartHx.reuniones,
+    Propuesta:chartHx.propuestas,
+    Negociacion:chartHx.meses.map(()=>0)
+  };
+  const prTitle=`Embudo por etapa mensual · ${user}`;
+  // Data label: mostrar número si el segmento tiene espacio (valor > 0)
+  const dlBase={anchor:'center',align:'center',color:'#fff',font:{weight:'bold',size:10},
+    display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+    formatter:(v)=>v};
+  mkChart('cBdmPR',{
+    type:'bar',
+    data:{labels:chartHx.meses,datasets:[
+      {label:'Prospecto',   data:stg.Prospecto,   backgroundColor:'#64748b', datalabels:{...dlBase,font:{weight:'bold',size:9}}},
+      {label:'Contacto',    data:stg.Contacto,    backgroundColor:'#3b82f6', datalabels:dlBase},
+      {label:'Reunión',     data:stg.Reunion,     backgroundColor:'#8b5cf6', datalabels:dlBase},
+      {label:'Propuesta',   data:stg.Propuesta,   backgroundColor:'#f59e0b', datalabels:dlBase},
+      {label:'Negociación', data:stg.Negociacion, backgroundColor:'#22c55e', datalabels:dlBase},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:FONT,font:{size:10}}},
+        title:{display:true,text:prTitle,color:FONT,font:{size:11}},
+        datalabels:{display:false} // default apagado; cada dataset lo activa individualmente
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{color:FONT,font:{size:10}}},
+        y:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10}}}
+      }
+    }
+  });
+
+  /* ── Comparativa Día/Semana ── */
+  window._bdmCompUser = user;
+  window._bdmCompDD   = (_DD && _DD.length) ? _DD : null;
+  if(!window._bdmCompMode) window._bdmCompMode = 'day';
+  renderBdmComp();
+}
+
+/* ═══════════════════════════════════════════════
+   GRÁFICO COMPARATIVO DÍA/SEMANA — BDM
+   Renderiza deals agregados por etapa actual vs período anterior
+   con % de variación por etapa.
+═══════════════════════════════════════════════ */
+function renderBdmComp(){
+  const mode = window._bdmCompMode || 'day';
+  const user = window._bdmCompUser || '';
+  const dd   = window._bdmCompDD;
+
+  const STGS  = ['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
+  const CLRS  = ['#64748b','#3b82f6','#8b5cf6','#f59e0b','#22c55e'];
+  const pad   = n => String(n).padStart(2,'0');
+  const fmtD  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const DAYS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const now   = new Date();
+  const today = fmtD(now);
+
+  let fromA, toA, fromB, toB, labelA, labelB;
+
+  if(mode === 'day'){
+    const yest = new Date(now); yest.setDate(now.getDate()-1);
+    fromA = toA = today;
+    fromB = toB = fmtD(yest);
+    const dName = d => DAYS[new Date(d+'T12:00').getDay()];
+    labelA = `Hoy · ${dName(fromA)} ${fromA.substring(8)}/${fromA.substring(5,7)}`;
+    labelB = `Ayer · ${dName(fromB)} ${fromB.substring(8)}/${fromB.substring(5,7)}`;
+  } else {
+    /* ── Semana ISO 8601: lunes→domingo, numeración estándar ISO ── */
+    function isoWk(d){
+      const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+      const dow=dt.getUTCDay()||7;
+      dt.setUTCDate(dt.getUTCDate()+4-dow);
+      const y1=new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+      return {n:Math.ceil(((dt-y1)/86400000+1)/7), yr:dt.getUTCFullYear()};
+    }
+    function isoMon(d){
+      const dt=new Date(d); const dow=dt.getDay()||7;
+      dt.setDate(dt.getDate()-dow+1); return dt;
+    }
+    const thisWmon=isoMon(now);
+    const lastWmon=new Date(thisWmon); lastWmon.setDate(thisWmon.getDate()-7);
+    const lastWsun=new Date(thisWmon); lastWsun.setDate(thisWmon.getDate()-1);
+    const wA=isoWk(now), wB=isoWk(lastWmon);
+    fromA=fmtD(thisWmon); toA=today;
+    fromB=fmtD(lastWmon); toB=fmtD(lastWsun);
+    labelA=`Semana ${pad(wA.n)} · ${wA.yr}  (${fromA.substring(5)} → ${toA.substring(5)})`;
+    labelB=`Semana ${pad(wB.n)} · ${wB.yr}  (${fromB.substring(5)} → ${toB.substring(5)})`;
+  }
+
+  function inRange(add, from, to){ return add >= from && add <= to; }
+
+  const dataA = dd ? STGS.map(s => dd.filter(d => d.pid===2 && d.own===user && d.stg===s && inRange(d.add,fromA,toA)).length)
+                   : STGS.map(()=>0);
+  const dataB = dd ? STGS.map(s => dd.filter(d => d.pid===2 && d.own===user && d.stg===s && inRange(d.add,fromB,toB)).length)
+                   : STGS.map(()=>0);
+
+  /* % variación por etapa */
+  const pct = dataA.map((a,i) => {
+    const b = dataB[i];
+    if(b===0 && a===0) return null;
+    if(b===0) return { txt:'+∞%', up:true };
+    const v = Math.round((a-b)/b*100);
+    return { txt:(v>0?'+':'')+v+'%', up:v>0, down:v<0 };
+  });
+
+  /* Info bar */
+  const info = document.getElementById('bdmCompInfo');
+  if(info) info.innerHTML = `<strong>${labelA}</strong>&nbsp;&nbsp;vs&nbsp;&nbsp;<strong>${labelB}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;BDM: <strong style="color:#60a5fa">${user}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Pipeline: Grupo Progestion`;
+
+  /* Toggle buttons */
+  ['btnCompDay','btnCompWeek'].forEach(id => {
+    const btn = document.getElementById(id);
+    if(!btn) return;
+    const active = (id==='btnCompDay' && mode==='day') || (id==='btnCompWeek' && mode==='week');
+    btn.style.background  = active ? '#3b82f6' : 'transparent';
+    btn.style.color       = active ? '#fff'    : 'var(--mu)';
+    btn.style.borderColor = active ? '#3b82f6' : '#64748b';
+  });
+
+  /* % strip debajo del chart */
+  const pctEl = document.getElementById('bdmCompPct');
+  if(pctEl){
+    pctEl.innerHTML = STGS.map((s,i) => {
+      const p = pct[i];
+      const clr   = !p ? '#94a3b8' : p.up ? '#22c55e' : p.down ? '#ef4444' : '#94a3b8';
+      const arrow = !p ? '–'       : p.up ? '▲'       : p.down ? '▼'       : '–';
+      const txt   = p ? p.txt : '—';
+      const shortS = s.replace('Propuesta Enviada','Prop.Env.').replace('Negociación','Neg.');
+      return `<div style="flex:1;text-align:center;padding:4px 2px;border-right:1px solid var(--bd)">
+        <div style="font-size:.65rem;color:var(--mu);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${shortS}</div>
+        <div style="font-size:.82rem;font-weight:700;color:${clr}">${arrow}&nbsp;${txt}</div>
+        <div style="font-size:.62rem;color:var(--mu);margin-top:1px">${dataA[i]} vs ${dataB[i]}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const maxY = Math.max(...dataA, ...dataB, 1) + Math.ceil(Math.max(...dataA,...dataB,1)*0.2) + 1;
+
+  mkChart('cBdmComp',{
+    type:'bar',
+    data:{
+      labels: STGS.map(s => s.replace('Propuesta Enviada','Prop. Enviada')),
+      datasets:[
+        { label: labelA, data: dataA,
+          backgroundColor: CLRS.map(c => c+'cc'), borderRadius: 6,
+          datalabels:{ display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+            anchor:'end', align:'top', color:FONT, font:{size:10,weight:'bold'}, formatter:v=>v }},
+        { label: labelB, data: dataB,
+          backgroundColor: '#94a3b844', borderRadius: 6,
+          datalabels:{ display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+            anchor:'end', align:'top', color:'#94a3b8', font:{size:9}, formatter:v=>v }},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ labels:{ color:FONT, font:{size:10} } },
+        title:{ display:true,
+          text: mode==='day'
+            ? `Deals agregados hoy vs ayer · ${user}`
+            : `Deals agregados esta semana vs semana anterior · ${user}`,
+          color:FONT, font:{size:11} },
+        datalabels:{}
+      },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:FONT,font:{size:10}} },
+        y:{ grid:{color:GRIDLINE}, ticks:{color:FONT,font:{size:10}},
+            suggestedMax: maxY, beginAtZero:true }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   TAB 3: GROWTH PARTNERS
+═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   GP LIVE API — Carga deals LevelUp desde PipeDrive
+   Pipelines: 2 (Progestion principal) + 9 (Trade MKT+SC)
+   Reps: Mario Germain · Jesus Montoya · Andres Montoya
+═══════════════════════════════════════════════ */
+/* ─── BBDD Unificada LevelUp — datos del xlsx Progestion_Leads_ICP_SoloChile ────
+   Fuente: 07.- LevelUp/02.- Reportes semanales  ·  Semana del 22 jun 2026
+   Scripts enviados = total leads prospectos vía mailing automatizado LinkedIn
+   Calificados ICP = leads marcados '✅ Calificó Sí' por el rep LevelUp           */
+const LU_BBDD_SCRIPTS = {
+  'Audisis':{
+    rep:'Felipe Campos', color:'#06b6d4',
+    totalScripts:144, calificados:1,
+    semana:'02 Jul 2026',
+    topRoles:[
+      {r:'Operaciones / Supply Chain',n:75},{r:'Otros',n:66},
+      {r:'Comercial / Ventas',n:2},{r:'Marketing / Brand',n:1}
+    ],
+    topSectores:[
+      {s:'Otros / sin clasificar',n:80},{s:'Retail / Consumo',n:39},
+      {s:'Tecnología / Electrónica',n:14},{s:'Farma / Salud',n:8}
+    ]
+  },
+  'Trade MKT + SC':{
+    rep:'Jesús Montoya', color:'#f59e0b',
+    totalScripts:234, calificados:5,
+    semana:'02 Jul 2026',
+    topRoles:[
+      {r:'Marketing / Brand',n:201},{r:'Trade Marketing / Category',n:17},
+      {r:'Otros',n:8},{r:'Comercial / Ventas',n:5}
+    ],
+    topSectores:[
+      {s:'Otros / sin clasificar',n:107},{s:'Retail / Consumo',n:74},
+      {s:'Vinos / Licores',n:13},{s:'Tecnología / Electrónica',n:13}
+    ]
+  },
+  'BBDD LevelUp':{
+    rep:'Todos los reps', color:'#64748b',
+    totalScripts:0, calificados:0,
+    semana:'—', topRoles:[], topSectores:[]
+  },
+  'Operación Retail':{
+    rep:'Andrés Montoya', color:'#8b5cf6',
+    totalScripts:188, calificados:3,
+    semana:'02 Jul 2026',
+    topRoles:[
+      {r:'Operaciones / Supply Chain',n:159},{r:'Otros',n:19},
+      {r:'Trade Marketing / Category',n:4},{r:'Compras / Abastecimiento',n:3}
+    ],
+    topSectores:[
+      {s:'Otros / sin clasificar',n:89},{s:'Retail / Consumo',n:44},
+      {s:'Alimentos',n:32},{s:'Farma / Salud',n:13}
+    ]
+  }
+};
+
+async function initGP(){
+  if(_GPD!==null){renderGP();return;}
+
+  /* ── Show loading ── */
+  const gpMain=document.getElementById('gpMain');
+  const gpLoad=document.getElementById('gpLoadState');
+  const gpSpinner=document.getElementById('gpSpinner');
+  const gpMsg=document.getElementById('gpLoadMsg');
+  const gpErr=document.getElementById('gpErrMsg');
+  const gpErrD=document.getElementById('gpErrDetail');
+  if(gpMain) gpMain.style.display='none';
+  if(gpLoad){gpLoad.style.display='flex';gpSpinner.style.display='block';gpErr.style.display='none';}
+
+  const all=[];
+  _GPD_stages={};
+  _GPD_pipes=[];
+  _GPD_err=null;
+
+  try{
+    /* ── Paso 1: Descubrir pipelines BBDD Unificada LevelUp ── */
+    if(gpMsg) gpMsg.textContent='Descubriendo pipelines LevelUp en PipeDrive…';
+    const pr=await fetch('https://api.pipedrive.com/v1/pipelines',{
+      headers:{'x-api-token':DASH_TK}
+    }).then(r=>r.json());
+
+    const allPipes=pr.data||[];
+    /* Pipelines LevelUp: 6=Audisis, 7=Trade MKT+Supply Chain, 9=BBDD Unificada LevelUp */
+    const LU_PIPE_IDS=[6,7,9];
+    const luPipes=allPipes.filter(p=>LU_PIPE_IDS.includes(p.id));
+    const pipeIds=LU_PIPE_IDS; /* hardcoded — no depende de nombre */
+    _GPD_pipes=allPipes.filter(p=>pipeIds.includes(p.id));
+    if(gpMsg) gpMsg.textContent=`${pipeIds.length} pipeline(s) LevelUp encontrados…`;
+
+    /* ── Paso 2: Etapas de los pipelines encontrados ── */
+    for(const pid of pipeIds){
+      try{
+        const sr=await fetch(`https://api.pipedrive.com/v1/stages?pipeline_id=${pid}`,{
+          headers:{'x-api-token':DASH_TK}
+        }).then(r=>r.json());
+        (sr.data||[]).forEach(s=>{_GPD_stages[s.id]=s.name;});
+      }catch(e){console.warn('Stages pid='+pid,e);}
+    }
+
+    /* ── Paso 3: Todos los deals de los pipelines LevelUp (sin filtro de owner) ── */
+    for(const pid of pipeIds){
+      const pname=allPipes.find(p=>p.id===pid)?.name||('Pipeline '+pid);
+      for(const status of ['open']){ /* solo tratos abiertos = vista kanban PipeDrive */
+        if(gpMsg) gpMsg.textContent=`${pname} — ${status}…`;
+        let s=0,more=true;
+        while(more){
+          const r=await fetch(
+            `https://api.pipedrive.com/v1/pipelines/${pid}/deals?status=${status}&limit=100&start=${s}`,
+            {headers:{'x-api-token':DASH_TK}}
+          ).then(r=>r.json());
+          const data=r.data||[];
+          data.forEach(d=>{
+            const empId=parseInt(d[DASH_EK]);
+            /* Clasificación vertical: intentar por empresa, etapa, título y pipeline */
+            const empStr   = DASH_EM[empId]||'';
+            const stgName  = _GPD_stages[d.stage_id]||('Etapa '+d.stage_id);
+            const titleLow = (d.title||'').toLowerCase();
+            const stageLow = stgName.toLowerCase();
+            const pipeLow  = pname.toLowerCase();
+            /* Vertical por pipeline ID: 6=Audisis, 7=Trade MKT+SC, 9=BBDD LevelUp */
+            let vert='BBDD LevelUp';
+            if(pid===6)      vert='Audisis';
+            else if(pid===7) vert='Trade MKT + SC';
+            all.push({
+              id:d.id, t:d.title||'', o:d.org_name||'', per:d.person_name||'',
+              own:d.owner_name||'',
+              v:d.value||0,
+              s:stgName, st:d.status, pid, pname,
+              add:(d.add_time||'').substring(0,10),
+              upd:(d.update_time||'').substring(0,10),
+              emp:empStr, vert,  /* vert = vertical clasificado en carga */
+              orig: d.origin||''  /* Origen de la fuente: API | ManuallyCreated | Import */
+            });
+          });
+          more=r.additional_data?.pagination?.more_items_in_collection||false;
+          s+=100;
+        }
+      }
+    }
+
+    _GPD=all;
+    /* Poblar selEmpresaGP con organizaciones reales desde API */
+    (function(){
+      const orgs=[...new Set(_GPD.filter(d=>d.st==='open').map(d=>d.o).filter(Boolean))].sort();
+      const orgSel=document.getElementById('selEmpresaGP');
+      if(orgSel) orgSel.innerHTML='<option value="">Todas las organizaciones</option>'+orgs.map(o=>`<option value="${o}">${o}</option>`).join('');
+    })();
+    const tag=document.getElementById('gpApiTag');
+    const pipeNames=_GPD_pipes.map(p=>p.name).join(' · ')||'Pipeline 9';
+    if(tag) tag.textContent=`${all.length} deals · ${pipeNames} · ${new Date().toLocaleTimeString('es-CL')}`;
+
+    /* ── Ocultar loading, mostrar contenido ── */
+    if(gpLoad) gpLoad.style.display='none';
+    if(gpMain) gpMain.style.display='block';
+    renderGP();
+
+  }catch(err){
+    _GPD_err=err.message||String(err);
+    if(gpSpinner) gpSpinner.style.display='none';
+    if(gpErr) gpErr.style.display='block';
+    if(gpErrD) gpErrD.textContent=_GPD_err;
+    console.error('initGP error:',err);
+  }
+}
+
+function renderGP(){
+  const selGPEl = document.getElementById('selGP');
+  const selProp = selGPEl ? selGPEl.value : 'Todos';
+  const useAPI  = Array.isArray(_GPD);  /* true si la API ya cargó, aunque haya 0 deals */
+
+  /* Clasificación por pipeline primero (Audisis / Trade MKT + SC / BBDD unificada) */
+  function getVertical(d){
+    /* Clasificación por pipeline ID: 6=Audisis, 7=Trade MKT+SC, 9=BBDD LevelUp */
+    const pid = d.pid||0;
+    if(pid===6) return 'Audisis';
+    if(pid===7) return 'Trade MKT + SC';
+    /* Fallback por nombre de pipeline (por si falta pid) */
+    const pn = (d.pname||'').toLowerCase().trim();
+    if(pn.includes('audisis'))                              return 'Audisis';
+    if(pn.includes('trade mkt')||pn.includes('supply'))    return 'Trade MKT + SC';
+    return 'BBDD LevelUp';
+  }
+
+  const STG_RANK     = {Prospecto:1,Contacto:2,'Con tarea':3,Reunión:4,Presupuestado:5,'New Stage':6,Ganado:7};
+  const AVANZADO     = ['Con tarea','Reunión','Presupuestado','New Stage','Ganado'];
+  const VORDER       = ['Audisis','Trade MKT + SC','BBDD LevelUp']; /* 3 pipelines LevelUp: 6, 7, 9 */
+
+  /* ── Deal collection ──────────────────────────────────────────────────── */
+  let allDeals = [];
+  if(useAPI){
+    allDeals = selProp === 'Todos' ? _GPD : _GPD.filter(d => d.own === selProp);
+  }
+  let openDeals = allDeals.filter(d => d.st === 'open');
+
+  /* ── Aplicar filtros de vertical, organización y fecha ───────────────── */
+  const filtVertical = document.getElementById('selGestionGP')?.value||'';
+  const filtOrg      = document.getElementById('selEmpresaGP')?.value||'';
+  const filtMonth    = document.getElementById('monthPickerGP')?.value||'';
+  if(filtVertical) openDeals = openDeals.filter(d => getVertical(d) === filtVertical);
+  if(filtOrg)      openDeals = openDeals.filter(d => (d.o||'') === filtOrg);
+  if(filtMonth)    openDeals = openDeals.filter(d => d.add && d.add.startsWith(filtMonth));
+
+  /* ── 1. BBDD Summary cards ────────────────────────────────────────────── */
+  const totalScripts = Object.values(LU_BBDD_SCRIPTS).reduce((a,b)=>a+b.totalScripts,0);
+  const totalICP     = Object.values(LU_BBDD_SCRIPTS).reduce((a,b)=>a+b.calificados,0);
+  const totalDeals   = openDeals.length;  /* solo tratos abiertos */
+  const avanzados    = openDeals.filter(d=>AVANZADO.includes(d.s||d.stg)).length;
+  const tasaConv     = totalScripts>0 ? (totalDeals/totalScripts*100).toFixed(1) : '0.0';
+
+  /* helper: card sin progress bar (m=0 → barra vacía pero sin barra) */
+  const sc2=(lbl,v,fmt,meta,col)=>{
+    const vStr=fmt(v);
+    const cc=vc(col);
+    return `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid ${cc};border-radius:10px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div class="lbl">${lbl}</div>
+        <span class="semafor ${col}"></span>
+      </div>
+      <div class="val" style="color:${cc};font-size:1.6rem;font-weight:800;line-height:1.1">${vStr}</div>
+      <div class="meta" style="margin-top:6px">${meta}</div>
+    </div>`;
+  };
+  document.getElementById('gpBBDDSummary').innerHTML = [
+    sc2('Scripts Enviados',totalScripts,n=>n.toLocaleString('es-CL'),'LinkedIn mailing automatizado','green'),
+    sc2('Calificados ICP',totalICP,n=>String(n),'✅ Aptos confirmados por LevelUp','green'),
+    sc2('Deals en Pipeline',totalDeals,n=>String(n),useAPI?'API en tiempo real':'Cargando…',
+          totalDeals>3?'green':totalDeals>0?'yellow':'red'),
+    sc2('En Avanzado+',avanzados,n=>String(n),'Con tarea · Reunión · Presupuestado',
+          avanzados>1?'green':avanzados>0?'yellow':'red'),
+    sc2('Conversión BBDD→Deal',parseFloat(tasaConv),n=>n+'%','Scripts → deals activos',
+          parseFloat(tasaConv)>2?'green':parseFloat(tasaConv)>0?'yellow':'red'),
+  ].join('');
+
+  /* ── 2. Vertical cards ────────────────────────────────────────────────── */
+  /* Clasificar solo deals abiertos en verticales (para KPIs y gráficos) */
+  const vertDeals = {};
+  VORDER.forEach(v=>vertDeals[v]=[]);
+  openDeals.forEach(d=>{
+    const v=getVertical(d);
+    if(!vertDeals[v]) vertDeals[v]=[];
+    vertDeals[v].push(d);
+  });
+
+  /* ── Debug / API status bar ─────────────────────────────────────────────── */
+  const sinVert = 0; /* vertical siempre asignada por pipeline ID */
+  const pipeNames = useAPI && _GPD_pipes.length
+    ? _GPD_pipes.map(p=>`<span style="background:#1e293b;border-radius:6px;padding:2px 8px;font-size:.68rem">${p.name} (ID:${p.id})</span>`).join(' ')
+    : '<span style="color:#f59e0b">Cargando pipelines…</span>';
+  const vertDist = VORDER.map(v=>{
+    const n=(vertDeals[v]||[]).length;
+    return `<span style="color:${(LU_BBDD_SCRIPTS[v]||{}).color||'#64748b'}">${v}: ${n}</span>`;
+  }).join(' · ');
+  const apiBarEl = document.getElementById('gpApiDebugBar');
+  if(apiBarEl){ apiBarEl.style.display = useAPI ? 'block':'none'; apiBarEl.innerHTML=`
+    <div style="margin-bottom:4px"><span style="color:#94a3b8">Pipelines LevelUp:</span> ${pipeNames}</div>
+    <div><span style="color:#94a3b8">Distribución deals API:</span> ${vertDist}
+    ${sinVert>0?` · <span style="color:#f59e0b">⚠️ ${sinVert} sin vertical (revisa campo Empresa en PipeDrive)</span>`:''}
+    </div>`; }
+
+  document.getElementById('gpVerticalCards').innerHTML = VORDER.map(vname=>{
+    const vd   = LU_BBDD_SCRIPTS[vname];
+    const vAll = vertDeals[vname]||[];
+    const vAv  = vAll.filter(d=>AVANZADO.includes(d.s||d.stg));
+    const conv = vd.totalScripts>0?(vAll.length/vd.totalScripts*100).toFixed(1):'0.0';
+    return `<div class="card" style="border:1px solid var(--bd);border-top:4px solid ${vd.color};border-radius:10px;padding:18px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${vd.color};flex-shrink:0"></div>
+        <div style="font-weight:700;font-size:.9rem">${vname}</div>
+        <div style="font-size:.71rem;color:var(--mu);margin-left:auto">${vd.rep}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--s2);border-radius:8px;padding:10px 8px;text-align:center">
+          <div style="font-size:1.45rem;font-weight:700;color:${vd.color}">${vd.totalScripts}</div>
+          <div style="font-size:.66rem;color:var(--mu);margin-top:2px">Scripts enviados</div>
+        </div>
+        <div style="background:var(--s2);border-radius:8px;padding:10px 8px;text-align:center">
+          <div style="font-size:1.45rem;font-weight:700;color:#10b981">${vd.calificados}</div>
+          <div style="font-size:.66rem;color:var(--mu);margin-top:2px">Calificados ICP</div>
+        </div>
+        <div style="background:var(--s2);border-radius:8px;padding:10px 8px;text-align:center">
+          <div style="font-size:1.45rem;font-weight:700;color:var(--tx)">${vAll.length}</div>
+          <div style="font-size:.66rem;color:var(--mu);margin-top:2px">Deals pipeline</div>
+        </div>
+        <div style="background:var(--s2);border-radius:8px;padding:10px 8px;text-align:center">
+          <div style="font-size:1.45rem;font-weight:700;color:#f59e0b">${vAv.length}</div>
+          <div style="font-size:.66rem;color:var(--mu);margin-top:2px">En avanzada+</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--bd);font-size:.7rem;color:var(--mu);text-align:center">
+        Conversión BBDD → Deal: <strong style="color:${vd.color}">${conv}%</strong>
+        &nbsp;·&nbsp; Semana ${vd.semana}
+      </div>
+    </div>`;
+  }).join('');
+
+  /* ── 3. Gráfico evolutivo ─────────────────────────────────────────────── */
+  const monthMap = {};
+  openDeals.forEach(d=>{
+    const raw = d.add||d.upd||'';
+    const m   = typeof raw==='string' ? raw.substring(0,7) : '';
+    if(!m || m.length!==7) return;
+    if(!monthMap[m]) monthMap[m]={'Audisis':0,'Trade MKT + SC':0,'BBDD LevelUp':0};
+    const v = getVertical(d);
+    monthMap[m][v] = (monthMap[m][v]||0)+1;
+  });
+  const months = Object.keys(monthMap).sort();
+  const MN = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const monthLabels = months.map(m=>{
+    const [y,mo]=m.split('-');
+    return (MN[parseInt(mo,10)-1]||mo)+' '+y.slice(2);
+  });
+
+  const evolEl = document.getElementById('gpEvolLabel');
+  if(evolEl) evolEl.textContent = months.length
+    ? '· '+monthLabels[0]+' → '+monthLabels[monthLabels.length-1] : '';
+
+  mkChart('cGpEvol',{
+    type:'line',
+    data:{
+      labels: monthLabels.length ? monthLabels : ['Sin datos'],
+      datasets:[
+        {label:'Audisis',
+         data:months.map(m=>monthMap[m]['Audisis']),
+         borderColor:'#06b6d4',backgroundColor:'#06b6d420',tension:.4,fill:true,pointRadius:4,borderWidth:2},
+        {label:'Trade MKT + SC',
+         data:months.map(m=>monthMap[m]['Trade MKT + SC']),
+         borderColor:'#f59e0b',backgroundColor:'#f59e0b20',tension:.4,fill:true,pointRadius:4,borderWidth:2},
+        {label:'BBDD LevelUp',
+         data:months.map(m=>monthMap[m]['BBDD LevelUp']),
+         borderColor:'#64748b',backgroundColor:'#64748b20',tension:.4,fill:true,pointRadius:4,borderWidth:2},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+      scales:{y:{beginAtZero:true,ticks:{precision:0,font:{size:11}}},
+              x:{ticks:{font:{size:11}}}}
+    }
+  });
+
+  /* ── 4. Gráfico embudo ────────────────────────────────────────────────── */
+  const STAGES = ['Prospecto','Contacto','Con tarea','Reunión','Presupuestado'];
+  const sCounts = {};
+  VORDER.forEach(v=>{sCounts[v]={};STAGES.forEach(s=>sCounts[v][s]=0);});
+  openDeals.forEach(d=>{
+    const stg=d.s||d.stg||'Prospecto';
+    const v=getVertical(d);
+    if(sCounts[v]){
+      sCounts[v][stg]=(sCounts[v][stg]||0)+1;
+    }
+  });
+  mkChart('cGpFunnelChart',{
+    type:'bar',
+    data:{
+      labels:['Prospecto','Contacto','Con tarea','Reunión','Presupuestado'],
+      datasets:[
+        {label:'Audisis',
+         data:STAGES.map(s=>sCounts['Audisis'][s]||0),
+         backgroundColor:'#06b6d4cc',borderRadius:5},
+        {label:'Trade MKT + SC',
+         data:STAGES.map(s=>sCounts['Trade MKT + SC'][s]||0),
+         backgroundColor:'#f59e0bcc',borderRadius:5},
+        {label:'BBDD LevelUp',
+         data:STAGES.map(s=>sCounts['BBDD LevelUp'][s]||0),
+         backgroundColor:'#64748bcc',borderRadius:5},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+      scales:{y:{beginAtZero:true,ticks:{precision:0,font:{size:11}}},
+              x:{ticks:{font:{size:11}}}}
+    }
+  });
+
+  /* ── 5. Tabla detalle ─────────────────────────────────────────────────── */
+  const gpTableEl = document.getElementById('gpDetalleTable');
+  if(!openDeals.length){
+    gpTableEl.innerHTML=`<div style="text-align:center;padding:36px;color:var(--mu)">
+      <div style="font-size:2rem;margin-bottom:10px">🔄</div>
+      <div>${useAPI?'No hay deals para el filtro seleccionado':'Conectando con PipeDrive…'}</div>
+    </div>`;
+    if(_GPD===null) initGP();  /* solo cargar si aún no se ha intentado */
+    return;
+  }
+
+  const STAGE_COLORS={
+    'Prospecto':'#94a3b8','Contacto':'#60a5fa','Con tarea':'#818cf8',
+    'Reunión':'#34d399','Presupuestado':'#f59e0b','New Stage':'#f97316','Ganado':'#10b981',
+    /* también para pipeline 2 */
+    'Propuesta Enviada':'#f59e0b','Negociación':'#ef4444'
+  };
+  const fmtDate=s=>{
+    if(!s||typeof s!=='string') return '—';
+    const dt=new Date(s);
+    if(isNaN(dt)) return s.substring(0,10);
+    return dt.toLocaleDateString('es-CL',{day:'2-digit',month:'short',year:'2-digit'});
+  };
+  const fmtVal=v=>{
+    if(!v||isNaN(v)) return '—';
+    const n=parseInt(v,10);
+    return n>0?'$'+n.toLocaleString('es-CL'):'—';
+  };
+
+  const sorted=[...openDeals].sort((a,b)=>{
+    const ra=STG_RANK[a.s||a.stg]||0, rb=STG_RANK[b.s||b.stg]||0;
+    if(rb!==ra) return rb-ra;
+    return (b.add||'')>(a.add||'')?1:-1;
+  });
+
+  gpTableEl.innerHTML=`
+  <div style="overflow-x:auto">
+  <table class="tbl"><thead><tr>
+    <th>Deal / Oportunidad</th>
+    <th>Organización</th>
+    <th>Vertical</th>
+    <th>Etapa</th>
+    <th>Propietario GP</th>
+    <th style="text-align:right">Valor</th>
+    <th>Fecha</th>
+  </tr></thead><tbody>
+  ${sorted.map(d=>{
+    const stg=d.s||d.stg||'—';
+    const sc=STAGE_COLORS[stg]||'#94a3b8';
+    const vert=getVertical(d);
+    const vc2=(LU_BBDD_SCRIPTS[vert]||{}).color||'#64748b';
+    const estado=d.st==='won'?'<span style="background:#10b98122;color:#10b981;font-size:.62rem;padding:1px 5px;border-radius:8px;margin-left:4px">✓WON</span>':'';
+    return `<tr>
+      <td style="font-weight:600;max-width:190px;word-break:break-word">${d.t||'—'}${estado}</td>
+      <td style="color:var(--mu);font-size:.82rem">${d.o||d.org||'—'}</td>
+      <td><span style="background:${vc2}22;color:${vc2};font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${vert}</span></td>
+      <td><span style="background:${sc}22;color:${sc};font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${stg}</span></td>
+      <td style="font-size:.8rem">${d.own||d.rep||'—'}</td>
+      <td style="font-size:.8rem;text-align:right">${fmtVal(d.v||d.val)}</td>
+      <td style="font-size:.75rem;color:var(--mu);white-space:nowrap">${fmtDate(d.add)}</td>
+    </tr>`;
+  }).join('')}
+  </tbody></table></div>
+  <div style="text-align:right;font-size:.7rem;color:var(--mu);margin-top:6px;padding:0 4px">
+    ${openDeals.length} deals abiertos · Pipelines LevelUp (PipeDrive API) · ${new Date().toLocaleString('es-CL')}
+  </div>`;
+
+  /* ── ICP Summary table (datos estáticos del xlsx) ─────────────────────── */
+  const ICP_DATA = [
+    {
+      vert:'Audisis', color:'#06b6d4', rep:'Felipe Campos',
+      total:144, calificados:1,
+      roles:[{r:'Operaciones / Supply Chain',n:75},{r:'Otros',n:66},{r:'Comercial / Ventas',n:2},{r:'Marketing / Brand',n:1}],
+      sectores:[{s:'Otros / sin clasificar',n:80},{s:'Retail / Consumo',n:39},{s:'Tecnología / Electrónica',n:14},{s:'Farma / Salud / Belleza',n:8}]
+    },
+    {
+      vert:'Trade MKT + SC', color:'#f59e0b', rep:'Jesús Montoya',
+      total:234, calificados:5,
+      roles:[{r:'Marketing / Brand',n:201},{r:'Trade Marketing / Category',n:17},{r:'Otros',n:8},{r:'Comercial / Ventas',n:5}],
+      sectores:[{s:'Otros / sin clasificar',n:107},{s:'Retail / Consumo',n:74},{s:'Vinos / Licores',n:13},{s:'Tecnología / Electrónica',n:13}]
+    },
+    {
+      vert:'Operación Retail', color:'#8b5cf6', rep:'Andrés Montoya',
+      total:188, calificados:3,
+      roles:[{r:'Operaciones / Supply Chain',n:159},{r:'Otros',n:19},{r:'Trade Marketing / Category',n:4},{r:'Compras / Abastecimiento',n:3}],
+      sectores:[{s:'Otros / sin clasificar',n:89},{s:'Retail / Consumo',n:44},{s:'Alimentos',n:32},{s:'Farma / Salud / Belleza',n:13}]
+    }
+  ];
+
+  const icpEl = document.getElementById('gpICPTable');
+  if(icpEl) icpEl.innerHTML = `
+  <div style="overflow-x:auto">
+  <table class="tbl">
+    <thead><tr>
+      <th>Vertical</th><th>Rep LevelUp</th>
+      <th style="text-align:right">Total Leads</th>
+      <th style="text-align:right">Calificados ICP</th>
+      <th style="text-align:right">% ICP</th>
+      <th>Top Roles (decisores)</th>
+      <th>Top Sectores</th>
+    </tr></thead>
+    <tbody>
+    ${ICP_DATA.map(row=>{
+      const pct = (row.calificados/row.total*100).toFixed(1);
+      const topRoles   = row.roles.slice(0,3).map(r=>`<span style="display:block;font-size:.67rem">${r.r}: <b>${r.n}</b></span>`).join('');
+      const topSect    = row.sectores.slice(0,3).map(s=>`<span style="display:block;font-size:.67rem">${s.s}: <b>${s.n}</b></span>`).join('');
+      return `<tr>
+        <td><span style="background:${row.color}22;color:${row.color};font-size:.7rem;padding:3px 9px;border-radius:10px;font-weight:700">${row.vert}</span></td>
+        <td style="font-size:.82rem">${row.rep}</td>
+        <td style="text-align:right;font-weight:700">${row.total}</td>
+        <td style="text-align:right;color:#10b981;font-weight:700">${row.calificados}</td>
+        <td style="text-align:right"><span style="color:${parseFloat(pct)>2?'#10b981':'#f59e0b'};font-weight:700">${pct}%</span></td>
+        <td>${topRoles}</td>
+        <td>${topSect}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>
+  <div style="text-align:right;font-size:.7rem;color:var(--mu);margin-top:5px;padding:0 4px">
+    Fuente: Progestion_Leads_ICP_SoloChile.xlsx · Semana 22 Jun 2026 · Solo Chile
+  </div>`;
+}
+
+function renderPipeline(){
+  const totalDeals=D.openTotal+D.wonTotal+D.lostTotal;
+  const wr=((D.wonTotal/(D.wonTotal+D.lostTotal))*100).toFixed(1);
+  document.getElementById('ptHeader').innerHTML=`
+    <div class="pt-k hl"><div class="lbl">Total Tratos</div><div class="val">${fN(totalDeals)}</div><div class="sub">Open:${D.openTotal} · Won:${D.wonTotal} · Lost:${D.lostTotal}</div></div>
+    <div class="pt-k"><div class="lbl">Pipeline Abierto</div><div class="val">${fM(D.openVal)}</div><div class="sub">${D.openTotal} tratos activos</div></div>
+    <div class="pt-k"><div class="lbl">Valor Ganado</div><div class="val" style="color:#4ade80">${fM(D.wonVal)}</div><div class="sub">${D.wonTotal} contratos firmados</div></div>
+    <div class="pt-k"><div class="lbl">Win Rate</div><div class="val" style="color:${+wr>=20?'#4ade80':+wr>=10?'#facc15':'#f87171'}">${wr}%</div><div class="sub">${D.wonTotal} de ${D.wonTotal+D.lostTotal}</div></div>
+    <div class="pt-k"><div class="lbl">Sin Respuesta</div><div class="val" style="color:#facc15">${D.sinResp}</div><div class="sub">Deals sin actividad reciente</div></div>
+    <div class="pt-k hl"><div class="lbl">Pipeline Total $</div><div class="val">${fM(D.openVal+D.wonVal)}</div><div class="sub">Abierto + Ganado</div></div>`;
+
+  const funColors=['#22c55e','#f59e0b','#8b5cf6','#3b82f6','#64748b'];
+  mkChart('cFunnel',{type:'bar',data:{labels:D.funnel.map(f=>f.name),datasets:[{data:D.funnel.map(f=>f.cnt),backgroundColor:funColors,borderRadius:4}]},options:{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT}},y:{grid:{display:false},ticks:{color:FONT}}}}});
+  mkChart('cVal',{type:'bar',data:{labels:D.funnel.map(f=>f.name),datasets:[{data:D.funnel.map(f=>f.val/1e6),backgroundColor:'#0071e3',borderRadius:5}]},options:{...baseOpts(),plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:FONT}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,callback:v=>'$'+v+'M'}}}}});
+
+  const h=D.heinar;
+  document.getElementById('actCom').innerHTML=
+    ['Reuniones BDM','Propuestas BDM','Nuevos Clientes Mes'].map((l,i)=>{
+      const v=[h.reunion,h.propuesta,D.wonMonth][i],o=[20,10,3][i];
+      const d=v-o,p=Math.round(d/o*100);
+      return`<div class="ai"><div class="l">${l}</div><div class="n">${v}</div><div class="o">Objetivo: ${o}</div><div class="d ${d>=0?'pos':'neg'}">${d>=0?'+':''}${d} (${p>=0?'+':''}${p}%)</div></div>`;
+    }).join('')+
+    `<div class="ai"><div class="l">Won Histórico</div><div class="n" style="color:#4ade80">${D.wonTotal}</div><div class="o">Win Rate: ${wr}%</div></div>`;
+
+  const vRows=D.vendors.map(v=>`<tr><td>${v.name}</td><td class="r">${v.open}</td><td class="r" style="color:#4ade80">${v.won}</td><td class="r">${fM(v.val)}</td></tr>`).join('');
+  document.getElementById('vendTable').innerHTML=`<table class="tbl"><thead><tr><th>Vendedor</th><th class="r">Abiertos</th><th class="r">Ganados</th><th class="r">Pipeline</th></tr></thead><tbody>${vRows}</tbody></table>`;
+
+  const tRows=D.topDeals.map(d=>`<tr><td style="font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td><td style="color:var(--mu);font-size:.72rem">${d.o}</td><td style="color:var(--mu);font-size:.72rem">${d.s}</td><td class="r" style="color:#60a5fa">${fM(d.v)}</td></tr>`).join('');
+  document.getElementById('topTable').innerHTML=`<table class="tbl"><thead><tr><th>Cliente</th><th>Vendedor</th><th>Etapa</th><th class="r">Valor</th></tr></thead><tbody>${tRows}</tbody></table>`;
+
+  mkChart('cLoss',{type:'bar',data:{labels:D.lossReasons.map(l=>l.r),datasets:[{data:D.lossReasons.map(l=>l.n),backgroundColor:'#7c3aed',borderRadius:4}]},options:{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT}},y:{grid:{display:false},ticks:{color:FONT,font:{size:11}}}}}});
+
+  const nRows=D.negDeals.map(d=>`<tr><td style="font-weight:500">${d.t}</td><td class="r" style="color:#4ade80">${fM(d.v)}</td><td style="color:#facc15;font-size:.75rem">${d.next||'Sin actividad'}</td></tr>`).join('');
+  document.getElementById('negTable').innerHTML=nRows?`<table class="tbl"><thead><tr><th>Cliente</th><th class="r">Valor</th><th>Próx. acción</th></tr></thead><tbody>${nRows}</tbody></table>`:`<div style="color:var(--mu);padding:16px;font-size:.83rem">Sin datos de negociación</div>`;
+}
+
+/* ─── INIT ─── */
+
+/* ═══════════════════════════════════════════════════════
+   REFRESH ALL: recalcula D desde _DD y re-renderiza todo
+═══════════════════════════════════════════════════════ */
+function recalcD(){
+  if(!_DD||!_DD.length) return;
+  const open = _DD.filter(d=>d.st==='open');
+  const won  = _DD.filter(d=>d.st==='won');
+  const lost = _DD.filter(d=>d.st==='lost');
+
+  D.openTotal = open.length;
+  D.wonTotal  = won.length;
+  D.lostTotal = lost.length;
+  D.openVal   = open.reduce((s,d)=>s+(d.val||0),0);
+  D.wonVal    = won.reduce((s,d)=>s+(d.val||0),0);
+
+  const closed = won.length + lost.length;
+  D.winRate = closed>0 ? Math.round(won.length/closed*100) : 0;
+
+  const STGS=['Negociación','Propuesta Enviada','Reunión','Contacto','Prospecto'];
+  D.funnel = STGS.map(name=>({
+    name,
+    cnt: open.filter(d=>d.stg===name).length,
+    val: open.filter(d=>d.stg===name).reduce((s,d)=>s+(d.val||0),0)
+  }));
+
+  const W={'Negociación':.9,'Propuesta Enviada':.6,'Reunión':.3,'Contacto':.1,'Prospecto':.05};
+  D.weighted = open.reduce((s,d)=>s+(d.val||0)*(W[d.stg]||0),0);
+  D.ratio    = D.openVal>0 ? +((D.weighted/D.openVal)*100/100).toFixed(2) : 0;
+
+  /* Heinar */
+  const hOpen = open.filter(d=>d.own==='Heinar Lazcano');
+  D.heinar = {
+    reunion:   hOpen.filter(d=>d.stg==='Reunión').length,
+    propuesta: hOpen.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length,
+    negociacion:hOpen.filter(d=>d.stg==='Negociación').length,
+    contacto:  hOpen.filter(d=>d.stg==='Contacto').length,
+    conv:      hOpen.filter(d=>['Contacto','Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length,
+    total:     hOpen.length
+  };
+
+  /* Vendors */
+  const VS=['Francisca Musso','Mario Germain','Andres Montoya','Jesus Montoya','Heinar Lazcano','Felipe Campos'];
+  D.vendors = VS.map(name=>({
+    name,
+    open: open.filter(d=>d.own===name).length,
+    won:  won.filter(d=>d.own===name).length,
+    val:  won.filter(d=>d.own===name).reduce((s,d)=>s+(d.val||0),0)
+  }));
+
+  /* Top deals */
+  D.topDeals = open
+    .filter(d=>['Negociación','Propuesta Enviada'].includes(d.stg))
+    .sort((a,b)=>(b.val||0)-(a.val||0)).slice(0,10)
+    .map(d=>({t:d.t,v:d.val,o:d.own,s:d.stg}));
+
+  /* Timestamp */
+  const now = new Date();
+  D.generated = now.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'})
+    +', '+now.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})+' hrs';
+  D.mesActual = now.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
+
+  /* ── Actualizar BDM_HX con counts reales del mes actual desde _DD ── */
+  const RD_STGS = ['Reunión','Propuesta Enviada','Negociación','Ganado'];
+  Object.keys(BDM_HX).forEach(rep=>{
+    const hx = BDM_HX[rep];
+    const repDeals = open.filter(d=>d.own===rep);
+    const last = hx.meses.length - 1;
+    /* Reuniones: deals en etapa Reunión o etapas posteriores (abiertos) */
+    const reunCount = repDeals.filter(d=>RD_STGS.includes(d.stg)).length;
+    const propCount = repDeals.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
+    const contCount = repDeals.filter(d=>d.stg==='Contacto').length;
+    /* Actualizar sólo el mes más reciente en los arrays históricos */
+    if(reunCount > 0 || hx.meses.length === 1) hx.reuniones[last] = reunCount;
+    if(propCount > 0 || hx.meses.length === 1) hx.propuestas[last] = propCount;
+    if(contCount > 0 || hx.meses.length === 1) hx.contactos[last] = contCount;
+    /* Actualizar stageVal desde deals reales */
+    hx.stageVal = {
+      Negociación:    repDeals.filter(d=>d.stg==='Negociación').reduce((s,d)=>s+(d.val||0),0),
+      PropuestaEnviada: repDeals.filter(d=>d.stg==='Propuesta Enviada').reduce((s,d)=>s+(d.val||0),0),
+      Reunión:        repDeals.filter(d=>d.stg==='Reunión').reduce((s,d)=>s+(d.val||0),0),
+      Contacto:       repDeals.filter(d=>d.stg==='Contacto').reduce((s,d)=>s+(d.val||0),0),
+      Prospecto:      repDeals.filter(d=>d.stg==='Prospecto').reduce((s,d)=>s+(d.val||0),0)
+    };
+    /* Actualizar funnel por empresa en empresaData si existe */
+    if(hx.empresaData){
+      Object.keys(hx.empresaData).forEach(emp=>{
+        const empDeals = repDeals.filter(d=>d.emp===emp);
+        const ed = hx.empresaData[emp];
+        ed.reuniones = empDeals.filter(d=>RD_STGS.includes(d.stg)).length;
+        ed.propuestas = empDeals.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
+        ed.contactos  = empDeals.filter(d=>d.stg==='Contacto').length;
+        ed.funnel = ['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación']
+          .map(s=>({s, n: empDeals.filter(d=>d.stg===s).length}));
+      });
+    }
+  });
+
+  /* Re-render */
+  const gt = document.getElementById('genTime');
+  if(gt) gt.textContent='Datos al: '+D.generated;
+  renderKPIs();
+  renderPipeline();
+  /* Si BDM está activo, re-renderizar con data fresca */
+  if(document.getElementById('tab-bdm')?.classList.contains('active')) renderBDM();
+}
+
+async function refreshAll(){
+  const btn = document.getElementById('btnRefreshAll');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Actualizando…'; btn.style.opacity='.7'; }
+
+  /* Reset caches */
+  _DD  = null;
+  _dch = {};
+  _GPD = null;
+  _GPD_pipes = [];
+
+  try{
+    /* Fetch Dashboard (Pipeline 2) + GP pipelines en paralelo — siempre ambos */
+    await Promise.allSettled([
+      initDashboard(),
+      initGP()
+    ]);
+
+    /* Recalcular D desde datos reales */
+    if(_DD) recalcD();
+
+  }catch(e){ console.error('refreshAll error:',e); }
+  finally{
+    if(btn){ btn.disabled=false; btn.textContent='🔄 Actualizar Dashboard'; btn.style.opacity='1'; }
+  }
+}
+
+window.addEventListener('load',()=>{
+  checkAlert();
+  document.getElementById('genTime').textContent='Datos al: '+D.generated;
+  renderKPIs();
+  renderPipeline();
+  /* GP se carga cuando el usuario hace clic en el tab (initGP via sw) */
+  if(document.getElementById('tab-gp').classList.contains('active')){
+    setTimeout(()=>initGP(),200);
+  } else {
+    renderGP();
+  }
+  /* ── Auto-fetch Pipeline 2 en background al arrancar ──
+     Así _DD está disponible para el tab BDM sin que el usuario abra Tab 5 */
+  setTimeout(()=>{
+    if(!_DD) initDashboard();
+  }, 800);
+});
+/* ═══════════════════════════════════════════════════════
+   TAB 5: DASHBOARD ANALYTICS
+═══════════════════════════════════════════════════════ */
+const DASH_TK='56b57304b126a250f55558004951f10055d3bd59';
+const DASH_EK='f13f3b010c13b30a8c840e4f95cfc94d153e80ff';
+const DASH_EM={56:'Progestion',57:'Audisis',58:'Ensti',59:'Crece',60:'Disecom Trade',61:'Disecom Logística',62:'Disecom D&P',104:'Proventas',105:'Medical Talent',106:'Permanent Placement'};
+const DASH_SM={
+  /* Pipeline 2 - GRUPO PROGESTION */
+  6:'Prospecto',7:'Contacto',8:'Reunión',9:'Propuesta Enviada',10:'Negociación',
+  /* Pipeline 3 - POST-VENTA */
+  11:'Onboarding',12:'Primer Mes',13:'Seguimiento Mensual',14:'Eval. Trimestral',15:'Renovación/Expansión',
+  /* Pipeline 4 - CROSS SELLING */
+  16:'Contacto',17:'Reunión',18:'Propuesta Enviada',19:'Negociación',
+  /* Pipeline 5 - PERU */
+  20:'Calificado',21:'Contacto establecido',22:'Demo programada',23:'Propuesta enviada',24:'Negociación comenzada'
+};
+const DASH_STGS=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación','Onboarding','Primer Mes','Seguimiento Mensual','Eval. Trimestral','Renovación/Expansión'];
+const DASH_COL={Prospecto:'#64748b',Contacto:'#3b82f6','Reunión':'#f59e0b','Propuesta Enviada':'#8b5cf6','Negociación':'#22c55e',Onboarding:'#14b8a6','Primer Mes':'#06b6d4','Seguimiento Mensual':'#0ea5e9','Eval. Trimestral':'#3b82f6','Renovación/Expansión':'#6366f1','Calificado':'#84cc16','Contacto establecido':'#22c55e','Demo programada':'#f59e0b','Propuesta enviada':'#f97316','Negociación comenzada':'#ef4444'};
+const DASH_WTS={Prospecto:.1,Contacto:.2,'Reunión':.4,'Propuesta Enviada':.6,'Negociación':.8,Onboarding:1,'Primer Mes':1,'Seguimiento Mensual':1,'Eval. Trimestral':1,'Renovación/Expansión':1,Calificado:.3,'Contacto establecido':.4,'Demo programada':.5,'Propuesta enviada':.65,'Negociación comenzada':.8};
+let _DD=null,_dch={};
+let _GPD=null,_GPD_stages={},_GPD_pipes=[],_GPD_err=null; /* GP live API data */
+
+function fMn(v){if(!v&&v!==0)return'—';const b=1e9,m=1e6,k=1e3;if(Math.abs(v)>=b)return'CLP$'+(v/b).toFixed(1)+'B';if(Math.abs(v)>=m)return'CLP$'+(v/m).toFixed(1)+'M';if(Math.abs(v)>=k)return'CLP$'+(v/k).toFixed(0)+'K';return'CLP$'+Math.round(v).toLocaleString('es-CL');}
+function fMnFull(v){return v?'CLP$'+Math.round(v).toLocaleString('es-CL'):'—';}
+
+async function initDashboard(){
+  if(_DD){ if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash(); recalcD(); return; }
+  document.getElementById('dashLoad').style.display='flex';
+  document.getElementById('dashMain').style.display='none';
+  const msg=document.getElementById('dashLoadMsg');
+  /* Pipelines comerciales: 2=GRUPO PROGESTION, 3=POST-VENTA, 4=CROSS SELLING, 5=PERU */
+  const COMM_PIPES=[2,3,4,5];
+  const all=[];
+  async function fetchPipe(pipeId,status,start){
+    /* Endpoint correcto: /pipelines/{id}/deals filtra por pipeline real */
+    const j=await fetch(`https://api.pipedrive.com/v1/pipelines/${pipeId}/deals?status=${status}&limit=100&start=${start}`,{headers:{'x-api-token':DASH_TK}}).then(r=>r.json()).catch(()=>({data:[],additional_data:{}}));
+    return{data:j.data||[],more:j.additional_data?.pagination?.more_items_in_collection||false};
+  }
+  function md(d,forcePid){
+    const empId=parseInt(d[DASH_EK]);
+    /* forcePid: pipeline del loop (garantizado); d.pipeline_id puede no venir en /pipelines/{id}/deals */
+    const actualPid=forcePid||d.pipeline_id||0;
+    const pipeName={2:'GRUPO PROGESTION',3:'POST-VENTA',4:'CROSS SELLING',5:'GP PERÚ'}[actualPid]||('Pipeline '+actualPid);
+    return{id:d.id,t:d.title||'',own:d.owner_name||'',org:d.org_name||'',per:d.person_name||'',
+      val:d.value||0,stg:DASH_SM[d.stage_id]||('Stage '+d.stage_id),st:d.status,
+      add:(d.add_time||'').substring(0,10),
+      won:(d.won_time||'').substring(0,10),
+      lbl:d.label||'',emp:DASH_EM[empId]||'',pid:actualPid,pipe:pipeName};
+  }
+  const statuses=['open','won','lost'];
+  for(const pid of COMM_PIPES){
+    for(const st of statuses){
+      msg.textContent=`Cargando pipeline ${pid} · ${st}…`;
+      let s=0,more=true;
+      while(more){
+        const p=await fetchPipe(pid,st,s);
+        all.push(...p.data.map(d=>md(d,pid)));
+        more=p.more; s+=100;
+      }
+    }
+  }
+  /* Deduplicar por deal id — el endpoint correcto ya solo devuelve pipelines comerciales */
+  const seen=new Set();
+  _DD=all.filter(d=>{if(seen.has(d.id))return false;seen.add(d.id);return true;});
+  /* Poblar dropdowns dinámicamente desde datos reales */
+  (function(){
+    const owners=[...new Set(_DD.map(d=>d.own).filter(Boolean))].sort();
+    const owSel=document.getElementById('dFOw');
+    if(owSel) owSel.innerHTML='<option value="">Todos</option>'+owners.map(o=>`<option>${o}</option>`).join('');
+    const stages=[...new Set(_DD.map(d=>d.stg).filter(Boolean))].sort();
+    const sgSel=document.getElementById('dFSg');
+    if(sgSel) sgSel.innerHTML='<option value="">Todas</option>'+stages.map(s=>`<option>${s}</option>`).join('');
+    const emps=[...new Set(_DD.map(d=>d.emp).filter(Boolean))].sort();
+    const emSel=document.getElementById('dFEm');
+    if(emSel) emSel.innerHTML='<option value="">Todas</option>'+emps.map(e=>`<option value="${e}">${e}</option>`).join('');
+  })();
+  /* Ocultar loader solo si Tab 5 estaba activo */
+  const dashLoad=document.getElementById('dashLoad');
+  const dashMain=document.getElementById('dashMain');
+  if(dashLoad) dashLoad.style.display='none';
+  if(dashMain) dashMain.style.display='block';
+  recalcD(); /* actualiza D + BDM_HX + re-renderiza tab activo */
+  /* renderDash() solo si el tab Dashboard está visible */
+  if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash();
+}
+
+function dashFilter(){
+  if(!_DD)return[];
+  const yr=document.getElementById('dFY').value;
+  const mo=document.getElementById('dFM').value;
+  const st=document.getElementById('dFS').value;
+  const sg=document.getElementById('dFSg').value;
+  const em=document.getElementById('dFEm').value;
+  const ow=document.getElementById('dFOw').value;
+  return _DD.filter(d=>{
+    if(yr&&!d.add.startsWith(yr))return false;
+    if(mo&&yr&&!d.add.startsWith(`${yr}-${mo}`))return false;
+    if(mo&&!yr&&d.add.substring(5,7)!==mo)return false;  /* fixed */
+    if(st&&d.st!==st)return false;
+    if(sg&&d.stg!==sg)return false;
+    if(em&&d.emp!==em)return false;
+    if(ow&&d.own!==ow)return false;
+    const pid=document.getElementById('dFPipe')?.value||'';
+    if(pid&&String(d.pid)!==pid)return false;
+    return true;
+  });
+}
+
+function mkD(id,cfg){
+  if(_dch[id]){try{_dch[id].destroy();}catch(e){}delete _dch[id];}
+  const cv=document.getElementById(id);
+  if(!cv)return;
+  _dch[id]=new Chart(cv,cfg);
+}
+
+function renderDash(){
+  const fd=dashFilter();
+  renderDashCards(fd);
+  renderDashKPI();
+  renderDashMonthly(fd);
+  renderDashFunnel(fd);
+  renderDashOwnerStage(fd);
+  renderDashOwnerDeals(fd);
+  renderDashStageDonut(fd);
+  renderDashEmpresa(fd);
+  renderDashTop(fd);
+  renderDashOwnerAnalysis(fd);
+  renderDashWeighted(fd);
+  renderDashWinRate(fd);
+  renderDashTable(fd,1);
+}
+
+function renderDashCards(fd){
+  /* Funnel stages = Prospecto+Contacto+Reunión+Propuesta Enviada+Negociación
+     ABIERTOS = solo deals abiertos en esas 5 etapas del embudo comercial */
+  const FUNNEL_STGS=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
+  const op=fd.filter(d=>d.st==='open'&&FUNNEL_STGS.includes(d.stg));
+  const opAll=fd.filter(d=>d.st==='open'); /* total abiertos (todos los stages) */
+  const wn=fd.filter(d=>d.st==='won'),ls=fd.filter(d=>d.st==='lost');
+  const opV=op.reduce((s,d)=>s+d.val,0),wnV=wn.reduce((s,d)=>s+d.val,0);
+  const wr=wn.length+ls.length>0?+(wn.length/(wn.length+ls.length)*100).toFixed(1):0;
+  const wrCol=wr>=25?'#22c55e':wr>=15?'#eab308':'#ef4444';
+  document.getElementById('dashCards').innerHTML=`
+    <div class="pt-k"><div class="lbl">Abiertos</div><div class="val" style="color:#60a5fa;font-size:2rem">${op.length}</div><div class="sub">en embudo comercial${opAll.length>op.length?` (${opAll.length} total)`:''}</div></div>
+    <div class="pt-k"><div class="lbl">Ganados</div><div class="val" style="color:#22c55e;font-size:2rem">${wn.length}</div><div class="sub">${fMn(wnV)}</div></div>
+    <div class="pt-k"><div class="lbl">Perdidos</div><div class="val" style="color:#ef4444;font-size:2rem">${ls.length}</div><div class="sub">cerrados</div></div>
+    <div class="pt-k hl"><div class="lbl" style="color:#93c5fd">Pipeline Abierto</div><div class="val" style="font-size:1.6rem">${fMn(opV)}</div><div class="sub">valor total activo</div></div>
+    <div class="pt-k"><div class="lbl">Valor Ganado</div><div class="val" style="color:#34c759;font-size:1.6rem">${fMn(wnV)}</div><div class="sub">ingresos cerrados</div></div>
+    <div class="pt-k"><div class="lbl">Win Rate</div><div class="val" style="color:${wrCol};font-size:2rem">${wr}%</div><div class="sub">ganados vs cerrados</div></div>
+  `;
+}
+
+function renderDashKPI(){
+  /* Compact scorecard using existing D constant */
+  const d2=D,h=d2.heinar;
+  const kpis=[
+    {n:'Pipeline Ponderado',v:d2.ratio,m:3,f:'x',desc:'×cuota'},
+    {n:'Win Rate Mensual',v:d2.winRate,m:25,f:'%',desc:'%'},
+    {n:'Nuevos Clientes',v:h.newClients,m:h.newClientsObj,f:'n',desc:'clientes'},
+    {n:'Nuevos Deals/Mes',v:h.newDeals,m:h.newDealsObj,f:'n',desc:'deals'},
+    {n:'Reuniones BDM',v:d2.reuniones,m:d2.reunionesObj,f:'n',desc:'reuniones'},
+    {n:'Cobertura Pipeline',v:d2.coverageRatio,m:2,f:'x',desc:'×cuota'},
+    {n:'Visitas GP',v:d2.gpVisits,m:d2.gpVisitsObj,f:'n',desc:'visitas'},
+    {n:'Prospectos Nuevos',v:h.prospects,m:h.prospectsObj,f:'n',desc:'prospectos'},
+    {n:'Seguimiento Activo',v:h.followUp,m:h.followUpObj,f:'n',desc:'seguimientos'},
+    {n:'Pipeline Equipo',v:d2.teamPipe,m:d2.teamPipeObj,f:'M',desc:'M CLP'},
+  ];
+  const sem=(v,m,f)=>{if(v==null||m==null)return'grey';const r=f==='x'?v/m:v/m;return r>=1?'green':r>=0.7?'yellow':'red';};
+  const fv=(v,f)=>{if(v==null)return'—';if(f==='%')return v.toFixed(1)+'%';if(f==='x')return v.toFixed(2)+'×';if(f==='M')return v?'$'+(v/1e6).toFixed(0)+'M':'—';return Math.round(v).toLocaleString('es-CL');};
+  const rows=kpis.map(k=>{
+    const sc=sem(k.v,k.m,k.f);
+    const col=sc==='green'?'#34c759':sc==='yellow'?'#ff9f0a':sc==='red'?'#ff3b30':'#aeaeb2';
+    const bg=sc==='green'?'#d1f5dc':sc==='yellow'?'#fff3d1':sc==='red'?'#ffd6d4':'#f5f5f7';
+    const dot=sc==='green'?'#34c759':sc==='yellow'?'#ff9f0a':sc==='red'?'#ff3b30':'#aeaeb2';
+    return `<div style="background:${bg};border:1px solid ${col}55;border-left:3px solid ${col};border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:.63rem;text-transform:uppercase;letter-spacing:.06em;color:#6e6e73;margin-bottom:4px;font-weight:500">${k.n}</div>
+        <div style="font-size:1.25rem;font-weight:700;color:${col};line-height:1;letter-spacing:-.01em">${fv(k.v,k.f)}</div>
+        <div style="font-size:.63rem;color:#8e8e93;margin-top:3px">Meta: ${fv(k.m,k.f)}</div>
+      </div>
+      <div style="width:10px;height:10px;border-radius:50%;background:${dot};flex-shrink:0"></div>
+    </div>`;
+  }).join('');
+  document.getElementById('dashKPI').innerHTML=`<div class="g5" style="margin-bottom:6px">${rows}</div>`;
+}
+
+function renderDashMonthly(fd){
+  const months=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const ns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const labels=months.map(m=>{const[y,mo]=m.split('-');return ns[parseInt(mo)-1]+(y==='2025'?'\'25':'');});
+  mkD('dchMonthly',{type:'bar',data:{labels,datasets:[
+    {label:'Abiertos',data:months.map(m=>fd.filter(d=>d.add.startsWith(m)&&d.st==='open').length),backgroundColor:'#3b82f6',borderRadius:3,stack:'s'},
+    {label:'Ganados',data:months.map(m=>fd.filter(d=>d.add.startsWith(m)&&d.st==='won').length),backgroundColor:'#22c55e',borderRadius:3,stack:'s'},
+    {label:'Perdidos',data:months.map(m=>fd.filter(d=>d.add.startsWith(m)&&d.st==='lost').length),backgroundColor:'#ef444455',borderRadius:3,stack:'s'},
+  ]},options:{...baseOpts(),scales:{x:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10}}},y:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}}},plugins:{...baseOpts().plugins,legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:11}}}}}});
+}
+
+function renderDashFunnel(fd){
+  const open=fd.filter(d=>d.st==='open');
+  const vals=DASH_STGS.map(s=>({n:open.filter(d=>d.stg===s).length,v:open.filter(d=>d.stg===s).reduce((a,b)=>a+b.val,0)}));
+  mkD('dchFunnel',{type:'bar',data:{labels:DASH_STGS,datasets:[{label:'Deals',data:vals.map(x=>x.n),backgroundColor:DASH_STGS.map(s=>DASH_COL[s]),borderRadius:4}]},options:{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false},datalabels:{display:true,color:'#fff',anchor:'center',align:'center',font:{size:11,weight:'bold'}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT}},y:{grid:{display:false},ticks:{color:FONT,font:{size:11}}}}}});
+}
+
+function renderDashOwnerStage(fd){
+  const open=fd.filter(d=>d.st==='open');
+  const owners=[...new Set(open.map(d=>d.own))].filter(Boolean).sort();
+  if(!owners.length){document.getElementById('dchOwnerStage').getContext('2d');return;}
+  const stageCols=['#64748b','#3b82f6','#f59e0b','#8b5cf6','#22c55e'];
+  const datasets=DASH_STGS.map((s,i)=>({label:s,data:owners.map(o=>open.filter(d=>d.own===o&&d.stg===s).length),backgroundColor:stageCols[i],borderRadius:2,stack:'s'}));
+  mkD('dchOwnerStage',{type:'bar',data:{labels:owners.map(o=>o.split(' ')[0]),datasets},options:{...baseOpts(),scales:{x:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}},y:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}}},plugins:{...baseOpts().plugins,legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:10}}}}}});
+}
+
+function renderDashOwnerDeals(fd){
+  const owners=[...new Set(fd.map(d=>d.own))].filter(Boolean);
+  const data=owners.map(o=>({o,op:fd.filter(d=>d.own===o&&d.st==='open').length,wn:fd.filter(d=>d.own===o&&d.st==='won').length,ls:fd.filter(d=>d.own===o&&d.st==='lost').length})).sort((a,b)=>(b.op+b.wn+b.ls)-(a.op+a.wn+a.ls));
+  mkD('dchOwnerDeals',{type:'bar',data:{labels:data.map(x=>x.o.split(' ')[0]),datasets:[
+    {label:'Abiertos',data:data.map(x=>x.op),backgroundColor:'#3b82f6',borderRadius:3,stack:'s'},
+    {label:'Ganados',data:data.map(x=>x.wn),backgroundColor:'#22c55e',borderRadius:3,stack:'s'},
+    {label:'Perdidos',data:data.map(x=>x.ls),backgroundColor:'#ef444455',borderRadius:3,stack:'s'},
+  ]},options:{...baseOpts('y'),indexAxis:'y',plugins:{...baseOpts().plugins,legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:10}}}},scales:{x:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}},y:{stacked:true,grid:{display:false},ticks:{color:FONT}}}}});
+}
+
+function renderDashStageDonut(fd){
+  const open=fd.filter(d=>d.st==='open');
+  const counts=DASH_STGS.map(s=>open.filter(d=>d.stg===s).length);
+  mkD('dchStageDonut',{type:'doughnut',data:{labels:DASH_STGS,datasets:[{data:counts,backgroundColor:DASH_STGS.map(s=>DASH_COL[s]),borderWidth:1,borderColor:'#ffffff'}]},options:{...baseOpts(),cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{color:FONT,font:{size:11},boxWidth:14}},datalabels:{display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,color:'#fff',font:{size:11,weight:'bold'},formatter:v=>v}}}});
+}
+
+function renderDashEmpresa(fd){
+  const emps=[...new Set(fd.map(d=>d.emp))].filter(Boolean);
+  const data=emps.map(e=>({e,op:fd.filter(d=>d.emp===e&&d.st==='open').length,wn:fd.filter(d=>d.emp===e&&d.st==='won').length,ls:fd.filter(d=>d.emp===e&&d.st==='lost').length})).sort((a,b)=>(b.op+b.wn+b.ls)-(a.op+a.wn+a.ls));
+  mkD('dchEmpresa',{type:'bar',data:{labels:data.map(x=>x.e),datasets:[
+    {label:'Abiertos',data:data.map(x=>x.op),backgroundColor:'#0ea5e9',borderRadius:3,stack:'s'},
+    {label:'Ganados',data:data.map(x=>x.wn),backgroundColor:'#22c55e',borderRadius:3,stack:'s'},
+    {label:'Perdidos',data:data.map(x=>x.ls),backgroundColor:'#ef444455',borderRadius:3,stack:'s'},
+  ]},options:{...baseOpts('y'),indexAxis:'y',plugins:{...baseOpts().plugins,legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:10}}}},scales:{x:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}},y:{stacked:true,grid:{display:false},ticks:{color:FONT,font:{size:11}}}}}});
+}
+
+function renderDashTop(fd){
+  const top=[...fd].filter(d=>d.val>0).sort((a,b)=>b.val-a.val).slice(0,15);
+  const stC={open:'#3b82f6',won:'#22c55e',lost:'#ef4444'};
+  const stL={open:'Abierto',won:'Ganado',lost:'Perdido'};
+  const rows=top.map((d,i)=>`<tr>
+    <td style="font-size:.75rem;color:var(--mu);text-align:center">${i+1}</td>
+    <td style="font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td>
+    <td style="color:var(--mu);font-size:.78rem">${d.own}</td>
+    <td style="font-size:.78rem">${d.stg||'—'}</td>
+    <td><span style="display:inline-block;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700;background:${stC[d.st]}22;color:${stC[d.st]}">${stL[d.st]||d.st}</span></td>
+    <td class="r" style="color:#60a5fa;font-weight:700">${fMn(d.val)}</td>
+    <td style="color:var(--mu);font-size:.75rem">${d.emp||'—'}</td>
+    <td style="color:var(--mu);font-size:.72rem">${d.org||'—'}</td>
+  </tr>`).join('');
+  document.getElementById('dashTop').innerHTML=`<table class="tbl" style="font-size:.79rem"><thead><tr><th style="width:36px">#</th><th>Deal</th><th>BDM</th><th>Etapa</th><th>Estado</th><th class="r">Valor</th><th>Empresa GP</th><th>Organización</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderDashOwnerAnalysis(fd){
+  const owners=[...new Set(fd.map(d=>d.own))].filter(Boolean).sort();
+  const rows=owners.map(o=>{
+    const od=fd.filter(d=>d.own===o);
+    const op=od.filter(d=>d.st==='open'),wn=od.filter(d=>d.st==='won'),ls=od.filter(d=>d.st==='lost');
+    const wr=wn.length+ls.length>0?+(wn.length/(wn.length+ls.length)*100).toFixed(1):null;
+    const wrCol=wr==null?'var(--mu)':wr>=25?'#22c55e':wr>=15?'#eab308':'#ef4444';
+    const pv=op.reduce((s,d)=>s+d.val,0),wv=wn.reduce((s,d)=>s+d.val,0);
+    const sc={};DASH_STGS.forEach(s=>{sc[s]=op.filter(d=>d.stg===s).length;});
+    const stgBars=DASH_STGS.map(s=>`<span title="${s}:${sc[s]}" style="display:inline-flex;align-items:center;gap:3px;font-size:.7rem;color:${DASH_COL[s]}"><span style="width:8px;height:8px;border-radius:50%;background:${DASH_COL[s]};display:inline-block"></span>${sc[s]}</span>`).join(' ');
+    return`<tr>
+      <td style="font-weight:600">${o}</td>
+      <td class="r" style="font-weight:700">${od.length}</td>
+      <td class="r" style="color:#60a5fa">${op.length}</td>
+      <td class="r" style="color:#22c55e">${wn.length}</td>
+      <td class="r" style="color:#ef4444">${ls.length}</td>
+      <td class="r" style="color:${wrCol};font-weight:700">${wr!=null?wr+'%':'—'}</td>
+      <td class="r" style="color:#60a5fa">${fMn(pv)}</td>
+      <td class="r" style="color:#22c55e">${fMn(wv)}</td>
+      <td>${stgBars}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('dashOwnerAnalysis').innerHTML=`<table class="tbl"><thead><tr><th>Vendedor/BDM</th><th class="r">Total</th><th class="r" style="color:#60a5fa">Open</th><th class="r" style="color:#22c55e">Won</th><th class="r" style="color:#ef4444">Lost</th><th class="r">Win%</th><th class="r">Pipeline</th><th class="r">Ganado</th><th>Por Etapa (open)</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderDashWeighted(fd){
+  const months=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const ns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const labels=months.map(m=>{const[y,mo]=m.split('-');return ns[parseInt(mo)-1]+(y==='2025'?'\'25':'');});
+  const ponderado=months.map(m=>{
+    const mDeals=fd.filter(d=>d.st==='open'&&d.add.startsWith(m));
+    return+(mDeals.reduce((s,d)=>s+(d.val*(DASH_WTS[d.stg]||0)),0)/1e6).toFixed(1);
+  });
+  const cuota=months.map(()=>300);
+  mkD('dchWeighted',{type:'bar',data:{labels,datasets:[
+    {type:'bar',label:'Pipeline Ponderado (M CLP)',data:ponderado,backgroundColor:'#8b5cf666',borderColor:'#8b5cf6',borderWidth:1,borderRadius:3},
+    {type:'line',label:'Meta (300 M)',data:cuota,borderColor:'#eab308',borderDash:[6,3],borderWidth:2,pointRadius:0,tension:0,fill:false},
+  ]},options:{...baseOpts(),scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10}}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,callback:v=>v+'M'}}},plugins:{...baseOpts().plugins,legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:11}}}}}});
+}
+
+function renderDashWinRate(fd){
+  const months=[];
+  for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const ns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const labels=months.map(m=>{const[y,mo]=m.split('-');return ns[parseInt(mo)-1]+(y==='2025'?'\'25':'');});
+  const wrData=months.map(m=>{const wn=fd.filter(d=>d.add.startsWith(m)&&d.st==='won').length,ls=fd.filter(d=>d.add.startsWith(m)&&d.st==='lost').length;return wn+ls>0?+(wn/(wn+ls)*100).toFixed(1):null;});
+  const newDeals=months.map(m=>fd.filter(d=>d.add.startsWith(m)).length);
+  mkD('dchWinRate',{type:'line',data:{labels,datasets:[
+    {label:'Win Rate %',data:wrData,borderColor:'#22c55e',backgroundColor:'#22c55e22',tension:.35,pointRadius:4,pointBackgroundColor:'#22c55e',yAxisID:'y',spanGaps:true},
+    {type:'bar',label:'Nuevos Deals',data:newDeals,backgroundColor:'#3b82f644',borderRadius:3,yAxisID:'y2'},
+  ]},options:{...baseOpts(),scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10}}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,callback:v=>v+'%'},position:'left',title:{display:true,text:'Win Rate',color:FONT,font:{size:10}}},y2:{grid:{display:false},ticks:{color:FONT},position:'right',title:{display:true,text:'N° Deals',color:FONT,font:{size:10}}}},plugins:{...baseOpts().plugins,legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:11}}}}}});
+}
+
+function renderDashTable(fd,page){
+  const PAGE=50;
+  const total=fd.length,pages=Math.ceil(total/PAGE)||1;
+  page=Math.max(1,Math.min(page,pages));
+  const slice=fd.slice((page-1)*PAGE,page*PAGE);
+  const stC={open:'#3b82f6',won:'#22c55e',lost:'#ef4444'};
+  const stL={open:'Abierto',won:'Ganado',lost:'Perdido'};
+  const rows=slice.map(d=>`<tr>
+    <td style="font-size:.71rem;color:var(--mu);font-family:monospace">${d.id}</td>
+    <td style="font-size:.76rem">${d.own}</td>
+    <td style="font-size:.75rem;color:var(--mu)">${d.emp||'—'}</td>
+    <td style="font-size:.75rem;color:var(--mu);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.org}">${d.org||'—'}</td>
+    <td style="font-size:.75rem;color:var(--mu)">${d.per||'—'}</td>
+    <td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td>
+    <td style="font-size:.75rem;color:${d.stg?DASH_COL[d.stg]||'var(--mu)':'var(--mu)'}">${d.stg||'—'}</td>
+    <td style="font-size:.75rem;color:var(--mu)">${d.pipe||'—'}</td>
+    <td style="font-size:.74rem;color:var(--mu)">${d.lbl||'—'}</td>
+    <td><span style="display:inline-block;padding:2px 7px;border-radius:99px;font-size:.7rem;font-weight:700;background:${stC[d.st]||'#64748b'}22;color:${stC[d.st]||'#64748b'}">${stL[d.st]||d.st}</span></td>
+    <td class="r" style="color:#60a5fa;font-variant-numeric:tabular-nums">${d.val>0?fMn(d.val):'—'}</td>
+    <td style="font-size:.72rem;color:var(--mu)">${d.add}</td>
+  </tr>`).join('');
+  const nav=`<div style="display:flex;gap:8px;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--bd);background:var(--s2)">
+    <span style="color:var(--mu);font-size:.78rem">${total.toLocaleString('es-CL')} tratos · pág ${page}/${pages}</span>
+    <div style="display:flex;gap:6px">
+      <button onclick="renderDashTable(dashFilter(),1)" class="sel" style="padding:3px 9px;font-size:.75rem">«</button>
+      <button onclick="renderDashTable(dashFilter(),${page-1})" class="sel" style="padding:3px 9px;font-size:.75rem" ${page<=1?'disabled':''}>‹</button>
+      <button onclick="renderDashTable(dashFilter(),${page+1})" class="sel" style="padding:3px 9px;font-size:.75rem" ${page>=pages?'disabled':''}>›</button>
+      <button onclick="renderDashTable(dashFilter(),${pages})" class="sel" style="padding:3px 9px;font-size:.75rem">»</button>
+    </div>
+  </div>`;
+  document.getElementById('dashDetail').innerHTML=`
+    <div style="overflow-x:auto">
+    <table class="tbl" style="font-size:.79rem;min-width:1050px">
+      <thead><tr><th>ID</th><th>Propietario</th><th>Empresa GP</th><th>Organización</th><th>Contacto</th><th>Título</th><th>Etapa</th><th>Pipeline</th><th>Etiqueta</th><th>Estado</th><th class="r">Valor</th><th>Creación</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>${nav}`;
+}
+
+</script>
+</body>
+</html>
