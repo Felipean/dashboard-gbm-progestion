@@ -1558,25 +1558,60 @@ function renderBDM(){
   const stageVals=[sv.Negociación,sv.PropuestaEnviada,sv.Reunión,sv.Contacto,sv.Prospecto];
   const stageColors2=['#22c55e','#3b82f6','#8b5cf6','#f59e0b','#64748b'];
 
-  /* ── Gráficos evolutivos — usan chartHx (empresa si filtro activo, vendedor si no) ── */
-  const evolTitle=empresa?`Actividad mensual · ${ed.label}`:`Actividad mensual · ${user}`;
-  mkChart('cBdmEvol',{type:'line',data:{labels:chartHx.meses,datasets:[
-    {label:'Reuniones',data:chartHx.reuniones,borderColor:'#8b5cf6',tension:.4,pointRadius:4},
-    {label:'Propuestas',data:chartHx.propuestas,borderColor:'#3b82f6',tension:.4,pointRadius:4},
-    {label:'Meta reuniones (20)',data:chartHx.meses.map(()=>20),borderColor:'#8b5cf6',borderDash:[5,4],pointRadius:0},
-    {label:'Meta propuestas (10)',data:chartHx.meses.map(()=>10),borderColor:'#3b82f6',borderDash:[5,4],pointRadius:0},
-  ]},options:{...baseOpts(),plugins:{legend:{labels:{color:FONT,font:{size:10}}},title:{display:true,text:evolTitle,color:FONT,font:{size:11}}}}});
+  /* ── Computar ventana de 12 meses para gráficos evolutivos ── */
+  (function(){
+    const MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const _n=new Date();
+    const _win=[];
+    for(let i=11;i>=0;i--){
+      const d=new Date(_n.getFullYear(),_n.getMonth()-i,1);
+      _win.push({
+        val:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+        lbl:MES[d.getMonth()]+(d.getFullYear()<_n.getFullYear()?"'"+String(d.getFullYear()).slice(2):'')
+      });
+    }
+    let h12;
+    if(_DD && _DD.length){
+      /* Datos reales desde _DD: contar deals agregados en cada mes */
+      const base=(m)=>_DD.filter(d=>d.pid===2&&d.own===user&&d.add.startsWith(m.val));
+      h12={
+        meses:_win.map(m=>m.lbl),
+        reuniones:_win.map(m=>base(m).filter(d=>['Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length),
+        propuestas:_win.map(m=>base(m).filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length),
+        winRate:_win.map(m=>{const b=base(m);const w=b.filter(d=>d.st==='won').length;const l=b.filter(d=>d.st==='lost').length;return(w+l)>0?Math.round(w/(w+l)*100):null;})
+      };
+    } else {
+      /* Fallback: BDM_HX completado hasta 12 meses con ceros al inicio */
+      const pad=Math.max(0,12-chartHx.meses.length);
+      const padLbls=_win.slice(0,pad).map(m=>m.lbl);
+      h12={
+        meses:[...padLbls,...chartHx.meses],
+        reuniones:[...Array(pad).fill(0),...(chartHx.reuniones||[])],
+        propuestas:[...Array(pad).fill(0),...(chartHx.propuestas||[])],
+        winRate:[...Array(pad).fill(null),...(chartHx.winRate||[])]
+      };
+    }
+
+    /* ── Gráfico: Evolutivo mensual — Actividad BDM (12 meses) ── */
+    const evolTitle=empresa?`Actividad mensual · ${ed.label}`:`Actividad mensual · ${user}`;
+    mkChart('cBdmEvol',{type:'line',data:{labels:h12.meses,datasets:[
+      {label:'Reuniones',data:h12.reuniones,borderColor:'#8b5cf6',tension:.4,pointRadius:3},
+      {label:'Propuestas',data:h12.propuestas,borderColor:'#3b82f6',tension:.4,pointRadius:3},
+      {label:'Meta reuniones (20)',data:h12.meses.map(()=>20),borderColor:'#8b5cf6',borderDash:[5,4],pointRadius:0,borderWidth:1},
+      {label:'Meta propuestas (10)',data:h12.meses.map(()=>10),borderColor:'#3b82f6',borderDash:[5,4],pointRadius:0,borderWidth:1},
+    ]},options:{...baseOpts(),plugins:{legend:{labels:{color:FONT,font:{size:10}}},title:{display:true,text:evolTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:9},maxRotation:45}}}}});
+
+    /* ── Gráfico: Win Rate mensual (12 meses) ── */
+    const wrTitle=empresa?`Win Rate mensual · ${ed.label}`:`Win Rate mensual · ${user}`;
+    mkChart('cBdmWR',{type:'line',data:{labels:h12.meses,datasets:[
+      {label:'Win Rate %',data:h12.winRate,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.15)',fill:true,tension:.4,pointRadius:3,spanGaps:true},
+      {label:'Meta (20%)',data:h12.meses.map(()=>20),borderColor:'#22c55e',borderDash:[6,3],pointRadius:0,borderWidth:1}
+    ]},options:{...baseOpts(),plugins:{legend:{labels:{color:FONT,font:{size:10}}},title:{display:true,text:wrTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:9},maxRotation:45}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},callback:v=>v+'%'}}}}});
+  })();
 
   /* Valor por etapa CLP$ */
   const valTitle=empresa?`Pipeline por etapa · ${ed.label}`:`Pipeline por etapa · ${user}`;
   mkChart('cBdmVal',{type:'bar',data:{labels:stageLabels,datasets:[{label:'Valor CLP$',data:stageVals,backgroundColor:stageColors2,borderRadius:5}]},options:{...baseOpts(),plugins:{legend:{display:false},title:{display:true,text:valTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{display:false},ticks:{color:FONT,font:{size:10}}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},callback:v=>fM(v)}}}}});
-
-  /* Win Rate evolutivo */
-  const wrTitle=empresa?`Win Rate mensual · ${ed.label}`:`Win Rate mensual · ${user}`;
-  mkChart('cBdmWR',{type:'line',data:{labels:chartHx.meses,datasets:[
-    {label:'Win Rate %',data:chartHx.winRate,borderColor:'#f87171',backgroundColor:'rgba(248,113,113,.15)',fill:true,tension:.4,pointRadius:4},
-    {label:'Meta (20%)',data:chartHx.meses.map(()=>20),borderColor:'#22c55e',borderDash:[6,3],pointRadius:0}
-  ]},options:{...baseOpts(),plugins:{legend:{labels:{color:FONT,font:{size:10}}},title:{display:true,text:wrTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10}}},y:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},callback:v=>v+'%'}}}}});
 
   /* Actividad por etapas — embudo completo apilado con números en cada segmento */
   const stg=chartHx.stages||{
@@ -2471,22 +2506,24 @@ let _GPD=null,_GPD_stages={},_GPD_pipes=[],_GPD_err=null; /* GP live API data */
 function fMn(v){if(!v&&v!==0)return'—';const b=1e9,m=1e6,k=1e3;if(Math.abs(v)>=b)return'CLP$'+(v/b).toFixed(1)+'B';if(Math.abs(v)>=m)return'CLP$'+(v/m).toFixed(1)+'M';if(Math.abs(v)>=k)return'CLP$'+(v/k).toFixed(0)+'K';return'CLP$'+Math.round(v).toLocaleString('es-CL');}
 function fMnFull(v){return v?'CLP$'+Math.round(v).toLocaleString('es-CL'):'—';}
 
+/* ── Guard: evita lanzar initDashboard() dos veces en paralelo ── */
+let _DD_loading=false;
+
 async function initDashboard(){
   if(_DD){ if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash(); recalcD(); return; }
-  document.getElementById('dashLoad').style.display='flex';
-  document.getElementById('dashMain').style.display='none';
+  if(_DD_loading) return; /* ya hay una carga en curso */
+  _DD_loading=true;
+
   const msg=document.getElementById('dashLoadMsg');
-  /* Pipelines comerciales: 2=GRUPO PROGESTION, 3=POST-VENTA, 4=CROSS SELLING, 5=PERU */
-  const COMM_PIPES=[2,3,4,5];
-  const all=[];
+  if(msg) msg.textContent='Cargando datos…';
+
+  /* ── Helpers ── */
   async function fetchPipe(pipeId,status,start){
-    /* Endpoint correcto: /pipelines/{id}/deals filtra por pipeline real */
     const j=await fetch(`https://api.pipedrive.com/v1/pipelines/${pipeId}/deals?status=${status}&limit=100&start=${start}`,{headers:{'x-api-token':DASH_TK}}).then(r=>r.json()).catch(()=>({data:[],additional_data:{}}));
     return{data:j.data||[],more:j.additional_data?.pagination?.more_items_in_collection||false};
   }
   function md(d,forcePid){
     const empId=parseInt(d[DASH_EK]);
-    /* forcePid: pipeline del loop (garantizado); d.pipeline_id puede no venir en /pipelines/{id}/deals */
     const actualPid=forcePid||d.pipeline_id||0;
     const pipeName={2:'GRUPO PROGESTION',3:'POST-VENTA',4:'CROSS SELLING',5:'GP PERÚ'}[actualPid]||('Pipeline '+actualPid);
     return{id:d.id,t:d.title||'',own:d.owner_name||'',org:d.org_name||'',per:d.person_name||'',
@@ -2495,23 +2532,22 @@ async function initDashboard(){
       won:(d.won_time||'').substring(0,10),
       lbl:d.label||'',emp:DASH_EM[empId]||'',pid:actualPid,pipe:pipeName};
   }
-  const statuses=['open','won','lost'];
-  for(const pid of COMM_PIPES){
-    for(const st of statuses){
-      msg.textContent=`Cargando pipeline ${pid} · ${st}…`;
-      let s=0,more=true;
-      while(more){
-        const p=await fetchPipe(pid,st,s);
-        all.push(...p.data.map(d=>md(d,pid)));
-        more=p.more; s+=100;
-      }
+  /* Descarga todas las páginas de un pipeline+estado en secuencia (paginación obligatoria) */
+  async function fetchAllPages(pid,st){
+    const rows=[];
+    let s=0,more=true;
+    while(more){
+      const p=await fetchPipe(pid,st,s);
+      rows.push(...p.data.map(d=>md(d,pid)));
+      more=p.more; s+=100;
     }
+    return rows;
   }
-  /* Deduplicar por deal id — el endpoint correcto ya solo devuelve pipelines comerciales */
-  const seen=new Set();
-  _DD=all.filter(d=>{if(seen.has(d.id))return false;seen.add(d.id);return true;});
-  /* Poblar dropdowns dinámicamente desde datos reales */
-  (function(){
+  function dedupe(arr){const seen=new Set();return arr.filter(d=>{if(seen.has(d.id))return false;seen.add(d.id);return true;});}
+  function flushDD(newDeals){
+    _DD=dedupe([...(_DD||[]),...newDeals]);
+  }
+  function populateDropdowns(){
     const owners=[...new Set(_DD.map(d=>d.own).filter(Boolean))].sort();
     const owSel=document.getElementById('dFOw');
     if(owSel) owSel.innerHTML='<option value="">Todos</option>'+owners.map(o=>`<option>${o}</option>`).join('');
@@ -2521,15 +2557,42 @@ async function initDashboard(){
     const emps=[...new Set(_DD.map(d=>d.emp).filter(Boolean))].sort();
     const emSel=document.getElementById('dFEm');
     if(emSel) emSel.innerHTML='<option value="">Todas</option>'+emps.map(e=>`<option value="${e}">${e}</option>`).join('');
-  })();
-  /* Ocultar loader solo si Tab 5 estaba activo */
-  const dashLoad=document.getElementById('dashLoad');
-  const dashMain=document.getElementById('dashMain');
-  if(dashLoad) dashLoad.style.display='none';
-  if(dashMain) dashMain.style.display='block';
-  recalcD(); /* actualiza D + BDM_HX + re-renderiza tab activo */
-  /* renderDash() solo si el tab Dashboard está visible */
-  if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash();
+  }
+
+  try{
+    /* ══ FASE 1: Pipeline 2 (GRUPO PROGESTION) — open+won+lost en paralelo ══
+       Objetivo: poblar _DD con datos BDM lo antes posible (~1 request round-trip) */
+    if(msg) msg.textContent='Cargando pipeline comercial…';
+    const [p2open,p2won,p2lost]=await Promise.all([
+      fetchAllPages(2,'open'),
+      fetchAllPages(2,'won'),
+      fetchAllPages(2,'lost')
+    ]);
+    flushDD([...p2open,...p2won,...p2lost]);
+    /* Re-renderizar BDM inmediatamente con datos reales de Pipeline 2 */
+    recalcD();
+
+    /* ══ FASE 2: Pipelines 3,4,5 — todos en paralelo en background ══
+       Necesarios para KPIs globales, Post-venta, Cross-selling, Perú */
+    if(msg) msg.textContent='Cargando pipelines secundarios…';
+    const bgTasks=[3,4,5].flatMap(pid=>
+      ['open','won','lost'].map(st=>fetchAllPages(pid,st))
+    );
+    const settled=await Promise.allSettled(bgTasks);
+    const bgDeals=settled.flatMap(r=>r.status==='fulfilled'?r.value:[]);
+    flushDD(bgDeals);
+
+    populateDropdowns();
+    /* Ocultar loader del Tab Analytics */
+    const dashLoad=document.getElementById('dashLoad');
+    const dashMain=document.getElementById('dashMain');
+    if(dashLoad) dashLoad.style.display='none';
+    if(dashMain) dashMain.style.display='block';
+    recalcD(); /* re-render final con datos completos */
+    if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash();
+
+  }catch(e){ console.error('initDashboard error:',e); }
+  finally{ _DD_loading=false; }
 }
 
 function dashFilter(){
