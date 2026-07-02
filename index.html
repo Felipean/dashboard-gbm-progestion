@@ -143,7 +143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
     </div>
     <div class="filter-grp">
       <label>Mes</label>
-      <input type="month" id="monthPicker" class="sel" value="2026-06" onchange="renderBDM()">
+      <select id="monthPicker" class="sel" onchange="renderBDM()"></select>
     </div>
   </div>
   <div class="st">Indicadores del período seleccionado</div>
@@ -221,7 +221,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
     </div>
     <div class="filter-grp">
       <label>Mes</label>
-      <input type="month" id="monthPickerGP" class="sel" value="2026-06" onchange="renderGP()">
+      <select id="monthPickerGP" class="sel" onchange="renderGP()"></select>
     </div>
     <div class="filter-grp">
       <label>Gestión LevelUp</label>
@@ -1179,6 +1179,22 @@ function renderKPIs(){
 /* ═══════════════════════════════════════════════
    TAB 2: SEGUIMIENTO BDM
 ═══════════════════════════════════════════════ */
+/* ── Poblar selects de mes dinámicamente (últimos 6 meses + actual) ── */
+function initMonthPicker(id){
+  const el=document.getElementById(id);
+  if(!el||el.tagName!=='SELECT') return;
+  const now=new Date();
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  let html='<option value="">Todos los meses</option>';
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    html+=`<option value="${val}">${MESES[d.getMonth()]} ${d.getFullYear()}</option>`;
+  }
+  el.innerHTML=html;
+  el.value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
+
 function renderBDM(){
   const user=document.getElementById('selUser')?.value||'Heinar Lazcano';
   const selMonth=document.getElementById('monthPicker')?.value||''; /* "2026-06" — filtra por mes de creación del deal */
@@ -1265,38 +1281,49 @@ function renderBDM(){
     </div>`;
   }
 
-  document.getElementById('bdmCards').innerHTML=[
-    kcard('Win Rate',wr,fP,20,'Meta: ≥ 20%',cWR),
-    kcard('Propuestas Enviadas',pr,fN,10,'Meta: ≥ 10 / mes',cP),
-    kcard('Reuniones Generadas',re,fN,20,'Total: Reunión + Propuesta + Neg. + Ganados',cR),
-    kcard('Total Contactados',co,fN,300,'Contacto → Reunión → Propuesta → Neg. + Ganados',cC),
-    `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #3b82f6;border-radius:10px;padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div class="lbl">En Contacto</div>
-        <span style="font-size:.75rem">✉️</span>
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:6px">
-        <div style="font-size:2rem;font-weight:800;color:#3b82f6;line-height:1">${fN(coActual)}</div>
-        <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">deals<br>en Contacto</div>
-      </div>
-      <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Contacto (correos activos)${empresa?' · filtrado por empresa':''}</div>
-    </div>`,
-    `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #8b5cf6;border-radius:10px;padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div class="lbl">En Agenda (Reunión)</div>
-        <span style="font-size:.75rem">📅</span>
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:6px">
-        <div style="font-size:2rem;font-weight:800;color:#8b5cf6;line-height:1">${fN(rr)}</div>
-        <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">en etapa<br>Reunión</div>
-      </div>
-      <div style="display:flex;gap:10px;font-size:.72rem;color:var(--mu);margin-top:4px">
-        <span>📋 ${rrOpen} pendientes</span>
-        ${rrWon>0?`<span>✅ ${rrWon} ganados</span>`:''}
-      </div>
-      <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Reunión (pendientes de realizar)${empresa?' · filtrado por empresa':''}</div>
-    </div>`,
-  ].join('');
+  /* Si hay filtro de mes activo pero los datos de API aún no están cargados
+     → mostrar placeholder en lugar de datos estáticos BDM_HX (que no respetan el filtro de mes) */
+  if(!_DD && selMonth){
+    document.getElementById('bdmCards').innerHTML=`
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 16px;color:var(--mu);text-align:center">
+        <div style="font-size:1.6rem;margin-bottom:10px">⏳</div>
+        <div style="font-size:.88rem;font-weight:600;color:var(--tx)">Cargando datos desde PipeDrive…</div>
+        <div style="font-size:.75rem;color:#94a3b8;margin-top:5px">Los indicadores del mes seleccionado aparecerán automáticamente.</div>
+      </div>`;
+  } else {
+    document.getElementById('bdmCards').innerHTML=[
+      kcard('Win Rate',wr,fP,20,'Meta: ≥ 20%',cWR),
+      kcard('Propuestas Enviadas',pr,fN,10,'Meta: ≥ 10 / mes',cP),
+      kcard('Reuniones Generadas',re,fN,20,'Total: Reunión + Propuesta + Neg. + Ganados',cR),
+      kcard('Total Contactados',co,fN,300,'Contacto → Reunión → Propuesta → Neg. + Ganados',cC),
+      `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #3b82f6;border-radius:10px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div class="lbl">En Contacto</div>
+          <span style="font-size:.75rem">✉️</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:6px">
+          <div style="font-size:2rem;font-weight:800;color:#3b82f6;line-height:1">${fN(coActual)}</div>
+          <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">deals<br>en Contacto</div>
+        </div>
+        <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Contacto (correos activos)${empresa?' · filtrado por empresa':''}</div>
+      </div>`,
+      `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #8b5cf6;border-radius:10px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div class="lbl">En Agenda (Reunión)</div>
+          <span style="font-size:.75rem">📅</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:6px">
+          <div style="font-size:2rem;font-weight:800;color:#8b5cf6;line-height:1">${fN(rr)}</div>
+          <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">en etapa<br>Reunión</div>
+        </div>
+        <div style="display:flex;gap:10px;font-size:.72rem;color:var(--mu);margin-top:4px">
+          <span>📋 ${rrOpen} pendientes</span>
+          ${rrWon>0?`<span>✅ ${rrWon} ganados</span>`:''}
+        </div>
+        <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Reunión (pendientes de realizar)${empresa?' · filtrado por empresa':''}</div>
+      </div>`,
+    ].join('');
+  }
 
   /* Tabla comparativa — si empresa tiene byUser, resalta deals en esa empresa */
   /* ── Tabla de deals individuales por cliente y etapa del embudo ── */
@@ -2400,6 +2427,9 @@ async function refreshAll(){
 }
 
 window.addEventListener('load',()=>{
+  /* Inicializar selects de mes con los últimos 6 meses (default = mes actual) */
+  initMonthPicker('monthPicker');
+  initMonthPicker('monthPickerGP');
   checkAlert();
   document.getElementById('genTime').textContent='Datos al: '+D.generated;
   renderKPIs();
