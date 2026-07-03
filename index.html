@@ -1382,9 +1382,23 @@ function renderBDM(){
     ${empByUser?`<th class="r" style="color:#60a5fa">${ed.label}</th>`:''}
   </tr></thead><tbody>
   ${Object.entries(BDM_HX).map(([nm,hd])=>{
-    const l=hd.meses.length-1;
-    const w=hd.winRate[l],p=hd.propuestas[l],r=hd.reuniones[l],c=hd.contactos[l];
-    const pval=Object.values(hd.stageVal).reduce((a,b)=>a+b,0);
+    let w,p,r,c,pval;
+    if(_DD && _DD.length){
+      /* Stats en tiempo real desde _DD — respeta filtro de mes */
+      const base2=_DD.filter(d=>d.pid===2 && d.own===nm && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)));
+      const wonM  =_DD.filter(d=>d.pid===2 && d.own===nm && d.st==='won'  && (!selMonth||d.add.startsWith(selMonth)));
+      const totalM=base2.length+wonM.length;
+      w   = totalM>0 ? Math.round(wonM.length/totalM*100) : 0;
+      p   = base2.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
+      r   = base2.filter(d=>['Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
+      c   = base2.filter(d=>['Contacto','Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
+      pval= base2.reduce((s,d)=>s+(d.val||0),0);
+    } else {
+      /* Fallback datos estáticos cuando _DD no está disponible */
+      const l=hd.meses.length-1;
+      w=hd.winRate[l]; p=hd.propuestas[l]; r=hd.reuniones[l]; c=hd.contactos[l];
+      pval=Object.values(hd.stageVal).reduce((a,b)=>a+b,0);
+    }
     const empDeals=empByUser?empByUser[nm]||0:null;
     return`<tr style="${nm===user?'background:rgba(37,99,235,.1);':''}" onclick="document.getElementById('selUser').value='${nm}';renderBDM()">
       <td style="font-weight:600;cursor:pointer">${nm==='Heinar Lazcano'?'🔎 ':''}<span style="color:${nm===user?'#60a5fa':'inherit'}">${nm}</span></td>
@@ -1444,52 +1458,70 @@ function renderBDM(){
   document.getElementById('funnelBDM').innerHTML=
     `<svg viewBox="0 0 ${W} ${totalH}" width="100%" style="max-height:260px">${rows}</svg>${byUserHTML}`;
 
-  /* ── Tabla Reuniones por Deal ── */
-  const rdSTG_ORDER=['Ganado','Negociación','Propuesta Enviada','Reunión'];
-  const rdSTG_COLOR={'Ganado':'#22c55e','Negociación':'#a78bfa','Propuesta Enviada':'#60a5fa','Reunión':'#f59e0b'};
-  /* Deals con Reunión: usa _DD en tiempo real si disponible, sino REUNION_DEALS */
-  let reunDeals2;
-  const RD_STGS2 = ['Reunión','Propuesta Enviada','Negociación','Ganado'];
+  /* ── Tabla Pipeline Completo por Etapa ── */
+  const ALL_STG_ORDER=['Ganado','Negociación','Propuesta Enviada','Reunión','Contacto','Prospecto'];
+  const ALL_STG_COLOR={'Ganado':'#22c55e','Negociación':'#a78bfa','Propuesta Enviada':'#60a5fa','Reunión':'#f59e0b','Contacto':'#3b82f6','Prospecto':'#64748b'};
+  let allPipeDeals=[];
   if(_DD && _DD.length){
-    reunDeals2 = _DD
-      .filter(d => d.pid===2 && d.own===user && (!selMonth||d.add.startsWith(selMonth)) && RD_STGS2.includes(d.stg))
-      .map(d => ({t:d.t, o:d.org||d.per||'—', emp:d.emp||'—', s:d.stg, v:d.val||0, u:d.add||''}));
+    const empF=empresa?(d=>d.emp===empresa):()=>true;
+    /* Open deals: todas las etapas del embudo */
+    const openD=_DD.filter(d=>d.pid===2 && d.own===user && d.st==='open'
+      && (!selMonth||d.add.startsWith(selMonth)) && empF(d));
+    /* Won deals: marcar etapa como 'Ganado' */
+    const wonD=_DD.filter(d=>d.pid===2 && d.own===user && d.st==='won'
+      && (!selMonth||d.add.startsWith(selMonth)) && empF(d));
+    allPipeDeals=[
+      ...openD.map(d=>({t:d.t, cli:d.org||d.per||'—', emp:d.emp||'—', s:d.stg, u:d.add||''})),
+      ...wonD.map(d=> ({t:d.t, cli:d.org||d.per||'—', emp:d.emp||'—', s:'Ganado', u:d.add||''}))
+    ];
   } else {
-    reunDeals2 = (REUNION_DEALS[user]||[]).slice();
+    allPipeDeals=(REUNION_DEALS[user]||[]).map(d=>({t:d.t, cli:d.o||'—', emp:'—', s:d.s, u:'—'}));
   }
-  reunDeals2.sort((a,b)=>rdSTG_ORDER.indexOf(a.s)-rdSTG_ORDER.indexOf(b.s));
-  const rdGanados2  = reunDeals2.filter(d=>d.s==='Ganado').length;
-  const rdActivos2  = reunDeals2.filter(d=>d.s!=='Ganado').length;
-  const rdTotalVal2 = reunDeals2.reduce((s,d)=>s+(d.v||0),0);
-  const rdRows2 = reunDeals2.length > 0
-    ? reunDeals2.map(d=>{
-        const sc=rdSTG_COLOR[d.s]||'#64748b';
-        return `<tr style="border-bottom:1px solid var(--bd)">
-          <td style="padding:8px 12px;font-weight:600;font-size:.82rem;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td>
-          <td style="padding:8px 12px;color:var(--mu);font-size:.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.emp||'—'}</td>
-          <td style="padding:8px 12px"><span style="display:inline-block;padding:2px 9px;border-radius:99px;background:${sc}22;color:${sc};font-weight:700;font-size:.72rem;white-space:nowrap">${d.s}</span></td>
-          <td style="padding:8px 12px;text-align:right;color:${(d.v||0)>0?'#60a5fa':'var(--mu)'};font-size:.82rem">${(d.v||0)>0?'$'+((d.v>=1e6)?(d.v/1e6).toFixed(1)+'M':(d.v/1e3).toFixed(0)+'K'):'—'}</td>
-        </tr>`;
-      }).join('')
-    : `<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--mu);font-size:.82rem">Sin deals registrados</td></tr>`;
+  /* Agrupar por etapa */
+  const stgGroups={};
+  ALL_STG_ORDER.forEach(s=>{ stgGroups[s]=allPipeDeals.filter(d=>d.s===s); });
+  const totalPipeDeals=allPipeDeals.length;
+  const totalGanados=(stgGroups['Ganado']||[]).length;
+  /* Construir filas HTML agrupadas */
+  let allStgRows='';
+  ALL_STG_ORDER.forEach(s=>{
+    const grp=stgGroups[s];
+    if(!grp||!grp.length) return;
+    const sc=ALL_STG_COLOR[s]||'#64748b';
+    allStgRows+=`<tr style="background:${sc}12;border-top:1px solid var(--bd)">
+      <td colspan="4" style="padding:5px 14px;font-size:.71rem;font-weight:700;color:${sc};text-transform:uppercase;letter-spacing:.06em">
+        <span style="display:inline-flex;align-items:center;gap:5px">
+          <span style="width:7px;height:7px;border-radius:50%;background:${sc};display:inline-block"></span>
+          ${s} <span style="opacity:.55;font-weight:400">(${grp.length})</span>
+        </span>
+      </td></tr>`;
+    grp.forEach(d=>{
+      allStgRows+=`<tr style="border-bottom:1px solid var(--bd)">
+        <td style="padding:7px 12px;font-weight:600;font-size:.80rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td>
+        <td style="padding:7px 12px;font-size:.78rem;color:var(--mu);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.cli}">${d.cli}</td>
+        <td style="padding:7px 12px;font-size:.78rem;color:var(--mu)">${d.emp||'—'}</td>
+        <td style="padding:7px 12px;font-size:.78rem;color:var(--mu);white-space:nowrap">${d.u||'—'}</td>
+      </tr>`;
+    });
+  });
+  if(!allStgRows) allStgRows=`<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--mu);font-size:.82rem">Sin deals registrados</td></tr>`;
   const rdEl2=document.getElementById('reunDealsTable');
   if(rdEl2) rdEl2.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bd)">
-      <div style="font-size:.85rem;font-weight:700;color:var(--tx)">🤝 Deals con Reunión · <span style="color:#8b5cf6">${user}</span></div>
+      <div style="font-size:.85rem;font-weight:700;color:var(--tx)">📋 Pipeline por etapa · <span style="color:#8b5cf6">${user}</span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <span style="background:#22c55e22;color:#22c55e;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">✅ ${rdGanados2} ganados</span>
-        <span style="background:#f59e0b22;color:#f59e0b;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">🤝 ${rdActivos2} activos</span>
-        ${rdTotalVal2>0?`<span style="background:#60a5fa22;color:#60a5fa;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">💰 $${(rdTotalVal2/1e6).toFixed(1)}M total</span>`:''}
+        ${totalGanados>0?`<span style="background:#22c55e22;color:#22c55e;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">✅ ${totalGanados} ganados</span>`:''}
+        <span style="background:#64748b22;color:#64748b;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600">📊 ${totalPipeDeals} deals</span>
       </div>
     </div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
       <thead><tr style="border-bottom:2px solid var(--bd)">
         <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Deal</th>
+        <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Cliente</th>
         <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Empresa GP</th>
-        <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Etapa</th>
-        <th style="padding:7px 12px;text-align:right;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Valor</th>
+        <th style="padding:7px 12px;text-align:left;font-size:.72rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Creado</th>
       </tr></thead>
-      <tbody>${rdRows2}</tbody>
+      <tbody>${allStgRows}</tbody>
     </table></div>`;
 
   /* Empresas GP por valor ganado
@@ -2514,6 +2546,11 @@ async function initDashboard(){
   if(_DD_loading) return; /* ya hay una carga en curso */
   _DD_loading=true;
 
+  /* Mostrar spinner, ocultar contenido mientras carga */
+  const dashLoad=document.getElementById('dashLoad');
+  const dashMain=document.getElementById('dashMain');
+  if(dashLoad) dashLoad.style.display='flex';
+  if(dashMain) dashMain.style.display='none';
   const msg=document.getElementById('dashLoadMsg');
   if(msg) msg.textContent='Cargando datos…';
 
@@ -2569,8 +2606,11 @@ async function initDashboard(){
       fetchAllPages(2,'lost')
     ]);
     flushDD([...p2open,...p2won,...p2lost]);
-    /* Re-renderizar BDM inmediatamente con datos reales de Pipeline 2 */
+    /* Mostrar contenido del Dashboard con datos de Pipeline 2 — sin esperar pipelines secundarios */
+    if(dashLoad) dashLoad.style.display='none';
+    if(dashMain) dashMain.style.display='block';
     recalcD();
+    if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash();
 
     /* ══ FASE 2: Pipelines 3,4,5 — todos en paralelo en background ══
        Necesarios para KPIs globales, Post-venta, Cross-selling, Perú */
@@ -2583,12 +2623,7 @@ async function initDashboard(){
     flushDD(bgDeals);
 
     populateDropdowns();
-    /* Ocultar loader del Tab Analytics */
-    const dashLoad=document.getElementById('dashLoad');
-    const dashMain=document.getElementById('dashMain');
-    if(dashLoad) dashLoad.style.display='none';
-    if(dashMain) dashMain.style.display='block';
-    recalcD(); /* re-render final con datos completos */
+    recalcD(); /* re-render final con datos completos de todos los pipelines */
     if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash();
 
   }catch(e){ console.error('initDashboard error:',e); }
