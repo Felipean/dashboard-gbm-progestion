@@ -104,6 +104,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
   <button class="tab-btn" onclick="sw('gp',this)">🌱 Growth Partners</button>
 
   <button class="tab-btn" onclick="sw('dash',this)">📈 Dashboard</button>
+  <button class="tab-btn" onclick="sw('farming',this)">🌾 Farming</button>
 </div>
 
 <!-- TAB 1: MIS KPIs -->
@@ -167,6 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
     <div id="bdmCompInfo" style="font-size:.7rem;color:var(--mu);margin-bottom:6px;padding:3px 8px;background:rgba(37,99,235,.06);border-radius:5px"></div>
     <div style="height:240px;position:relative"><canvas id="cBdmComp"></canvas></div>
     <div id="bdmCompPct" style="display:flex;gap:0;margin-top:10px;border-top:1px solid var(--bd);padding-top:8px"></div>
+    <div id="bdmCompDeals" style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px"></div>
   </div>
   <div class="g2 gap">
     <div class="cc">
@@ -174,6 +176,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
       <div id="funnelBDM" style="padding:6px 0"></div>
     </div>
     <div class="cc"><div class="ct">Empresas Relacionadas GP — Valor Ganado CLP$</div><div style="height:240px;position:relative"><canvas id="cEmpresaVal"></canvas></div></div>
+  </div>
+  <div class="cc" style="margin-top:16px">
+    <div class="ct">Deals por Stage y Pipeline <span id="pipeStageLabel" style="font-size:.72rem;color:var(--mu);font-weight:400"></span></div>
+    <div style="height:300px;position:relative"><canvas id="cPipeStage"></canvas></div>
   </div>
   <div class="cc" style="margin-top:16px">
     <div class="ct">Clientes GP contactados — Deals por etapa del embudo</div>
@@ -346,6 +352,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
       <select id="dFPipe" class="sel" onchange="if(_DD)renderDash()">
         <option value="">Todos</option>
         <option value="2">GRUPO PROGESTION</option>
+        <option value="6">Audisis</option>
+        <option value="7">Trade MKT + Supply Chain</option>
+        <option value="10">Medical Talent</option>
+        <option value="11">Operaciones (Out)</option>
+        <option value="12">Permanent</option>
         <option value="3">POST-VENTA</option>
         <option value="4">CROSS SELLING</option>
         <option value="5">GP PERÚ</option>
@@ -407,6 +418,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
       </div>
     </div>
 
+    <!-- SECCIÓN 5b: Deals por Stage y Pipeline -->
+    <div class="cc" style="margin-top:16px">
+      <div class="ct">Deals por Stage y Pipeline — Unidades de Negocio BDM</div>
+      <div style="height:320px;position:relative"><canvas id="dchDashPipeStage"></canvas></div>
+    </div>
+
     <!-- SECCIÓN 6: Top Oportunidades -->
     <div class="st">Top Oportunidades por Valor CLP — Funnel por Vendedor/Deal</div>
     <div class="tw gap" id="dashTop"></div>
@@ -433,6 +450,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 
   </div><!-- /dashMain -->
 </div><!-- /tab-dash -->
+
+<!-- TAB: FARMING -->
+<div id="tab-farming" class="tab-panel">
+  <div id="farmingContent"></div>
+</div>
 
 <script>
 /* ─── CONSTANTES TEMA ─── */
@@ -955,7 +977,7 @@ const REUNION_DEALS = {
 
 /* ─── Helpers ─── */
 function fM(v){if(!v||v===0)return '$0';const a=Math.abs(v);if(a>=1e9)return '$'+(v/1e9).toFixed(1)+'B';if(a>=1e6)return '$'+(v/1e6).toFixed(1)+'M';if(a>=1e3)return '$'+(v/1e3).toFixed(0)+'K';return '$'+v;}
-function stgBadge(s){const c={Negociación:'#a78bfa','Propuesta Enviada':'#60a5fa','Reunión':'#34d399',Contacto:'#94a3b8',Prospecto:'#f59e0b'};return `<span style="background:${c[s]||'#64748b'}22;color:${c[s]||'#64748b'};padding:2px 8px;border-radius:4px;font-size:.75rem">${s}</span>`;}
+function stgBadge(s){const c={'Negociación':'#a78bfa','Presupuestado':'#f97316','Reunión':'#8b5cf6','Con tarea':'#f59e0b','Contacto (GP)':'#3b82f6','Contacto (LUP)':'#06b6d4','Prospecto':'#64748b','Ganado':'#22c55e','Perdido':'#ef4444','Contacto':'#3b82f6','Propuesta Enviada':'#60a5fa'};return `<span style="background:${c[s]||'#64748b'}22;color:${c[s]||'#64748b'};padding:2px 8px;border-radius:4px;font-size:.75rem">${s}</span>`;}
 function mkChart(id,cfg){const el=document.getElementById(id);if(!el)return null;const ex=Chart.getChart(el);if(ex)ex.destroy();return new Chart(el,cfg);}
 function baseOpts(indexAxis='x'){return {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:FONT}}},scales:{x:{grid:{color:indexAxis==='y'?'transparent':GRIDLINE},ticks:{color:FONT,font:{size:11}}},y:{grid:{color:indexAxis==='y'?GRIDLINE:GRIDLINE},ticks:{color:FONT,font:{size:11}}}}};}
 function fN(v){return v!=null&&!isNaN(v)?Math.round(v).toLocaleString('es-CL'):'—';}
@@ -981,6 +1003,7 @@ function sw(id,btn){
   if(id==='pipe')setTimeout(()=>renderPipeline(),50);
   if(id==='gp')setTimeout(()=>initGP(),50);
   if(id==='dash')setTimeout(()=>initDashboard(),50);
+  if(id==='farming')setTimeout(()=>renderFarming(),50);
 }
 
 /* ─── ALERT ─── */
@@ -1007,7 +1030,7 @@ function renderKPIs(){
       real:D.weighted, realFmt:fM(D.weighted), meta:'≥ 3× cuota mensual',
       proy:(D.ratio/pct).toFixed(2),
       calc:`Σ(Valor deal × % probabilidad etapa) ÷ Cuota mensual ($274M)<br>
-        <span style="color:#64748b">Pesos: Negociación 90% · Propuesta 50% · Reunión 25% · Contacto 10% · Prospecto 5%</span><br>
+        <span style="color:#64748b">Pesos: Negociación 80% · Presupuestado 65% · Reunión 40% · Con tarea 25% · Contacto(GP) 15% · Prospecto 5%</span><br>
         <span style="color:#60a5fa">${fM(D.weighted)} ÷ $274M = ${D.ratio}×</span>`
     },
     {
@@ -1017,7 +1040,7 @@ function renderKPIs(){
       real:D.wonMonth, realFmt:fN(D.wonMonth)+' clientes', meta:'≥ 3 nuevos/mes (desde mes 3)',
       proy:Math.round(D.wonMonth/pct),
       calc:`Deals con status=won y won_time dentro del mes en curso<br>
-        <span style="color:#64748b">Fuente: Pipeline GP (pipeline_id=2), todos los usuarios</span><br>
+        <span style="color:#64748b">Fuente: Todos los pipelines BDM (2,6,7,10,11,12), todos los usuarios</span><br>
         <span style="color:#60a5fa">${D.wonMonth} contratos firmados en junio 2026</span>`
     },
     {
@@ -1027,8 +1050,8 @@ function renderKPIs(){
       real:h.conv, realFmt:fP(h.conv), meta:'≥ 40%',
       proy:Math.min(100,Math.round(h.conv*1.05)),
       calc:`Deals en Propuesta ÷ (Deals en Reunión + Deals en Propuesta) × 100<br>
-        <span style="color:#64748b">Usuario: Heinar Lazcano · stages Reunión (id=8) y Propuesta (id=9)</span><br>
-        <span style="color:#60a5fa">${h.propuesta} ÷ (${h.reunion}+${h.propuesta}) = ${h.conv}%</span>`
+        <span style="color:#64748b">Usuario: Heinar Lazcano · stage Reunión → Presupuestado · todos los pipelines BDM</span><br>
+        <span style="color:#60a5fa">${h.propuesta} Presupuestados ÷ (${h.reunion} Reuniones + ${h.propuesta} Presupuestados) = ${h.conv}%</span>`
     },
     {
       n:4, name:'Win Rate del Equipo',
@@ -1047,8 +1070,8 @@ function renderKPIs(){
       real:`${fN(h.reunion)} reuniones · ${fN(h.propuesta)} propuestas`, realFmt:`${h.reunion} reun / ${h.propuesta} prop`, meta:'≥ 20 reuniones y ≥ 10 propuestas/mes/BDM',
       proy: `${Math.round(h.reunion/pct)} reun / ${Math.round(h.propuesta/pct)} prop proy.`,
       calc:`Reuniones efectivas realizadas al mes + Propuestas enviadas al mes — ambas métricas deben cumplirse<br>
-        <span style="color:#64748b">Fuente: stage Reunión (id=8) y stage Propuesta (id=9) · Pipeline GP · por usuario</span><br>
-        <span style="color:#60a5fa">Heinar: ${h.reunion}/20 reuniones · ${h.propuesta}/10 propuestas</span>`
+        <span style="color:#64748b">Fuente: stage Reunión + Presupuestado · Todos los pipelines BDM · por usuario</span><br>
+        <span style="color:#60a5fa">Heinar: ${h.reunion}/20 reuniones · ${h.propuesta}/10 presupuestados</span>`
     },
     {
       n:6, name:'% Leads Calificados sobre Total Ingresados',
@@ -1088,7 +1111,7 @@ function renderKPIs(){
       proy:'—',
       calc:`Evaluaciones realizadas (día 30, 60, 90) ÷ Evaluaciones requeridas × 100<br>
         <span style="color:#f87171;font-weight:600">⚠ Heinar Lazcano — evaluación día 30 vence el 30 de junio 2026</span><br>
-        <span style="color:#64748b">KPIs mínimos evaluación: WR≥20% · Propuestas≥10 · Reuniones≥20 · Contactos≥300</span>`
+        <span style="color:#64748b">KPIs mínimos evaluación: WR≥20% · Presupuestados≥10 · Reuniones Generadas≥20 · Contactados BDM≥300</span>`
     },
     {
       n:10, name:'Forecast Semanal Presentado en N10',
@@ -1230,20 +1253,19 @@ function renderBDM(){
   const wr=empresa?(activeEd.winRate??ed.winRate):hx.winRate[last];
   let pr, re, co, coActual, rr;
   if(_DD && _DD.length){
-    /* Estado actual del pipeline 2 (GRUPO PROGESTION) — SIN filtro de mes.
-       Un deal creado en Mayo que hoy está en Propuesta Enviada SÍ cuenta en todos los KPIs. */
-    const base = _DD.filter(d=>d.pid===2 && d.own===user && d.st==='open'
+    /* Estado actual — todos los pipelines BDM excepto pipeline 9 (BBDD LevelUp) */
+    const base = _DD.filter(d=>BDM_PIPES.has(d.pid) && d.own===user && d.st==='open'
                               && (!selMonth||d.add.startsWith(selMonth))
                               && (empresa?d.emp===empresa:true));
-    /* Propuestas Enviadas: deals actualmente en Propuesta Enviada o Negociación */
-    pr       = base.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
-    /* Reuniones Generadas: deals actualmente en Reunión, Propuesta Enviada o Negociación */
-    re       = base.filter(d=>['Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
-    /* Total Contactados: deals actualmente en Contacto o etapas superiores */
-    co       = base.filter(d=>['Contacto','Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
-    /* En Contacto: deals actualmente en etapa Contacto */
-    coActual = base.filter(d=>d.stg==='Contacto').length;
-    /* En Agenda: deals actualmente en etapa Reunión */
+    /* Presupuestados: deals en Presupuestado o Negociación */
+    pr       = base.filter(d=>['Presupuestado','Negociación'].includes(d.stg)).length;
+    /* Reuniones Generadas: Reunión + Presupuestado (regla 4) */
+    re       = base.filter(d=>['Reunión','Presupuestado'].includes(d.stg)).length;
+    /* Total Contactados BDM: todos excepto Contacto(LUP) que es gestión LevelUp (regla 2) */
+    co       = base.filter(d=>d.stg!=='Contacto (LUP)').length;
+    /* En Contacto (GP): deals actualmente en etapa Contacto (GP) */
+    coActual = base.filter(d=>d.stg==='Contacto (GP)').length;
+    /* En Agenda: deals actualmente en etapa Reunión (regla 3) */
     rr       = base.filter(d=>d.stg==='Reunión').length;
   } else {
     /* Fallback datos estáticos BDM_HX */
@@ -1251,8 +1273,8 @@ function renderBDM(){
     re       = empresa?(activeEd.reuniones??ed.reuniones):hx.reuniones[last];
     co       = empresa?(activeEd.contactos??ed.contactos):hx.contactos[last];
     coActual = empresa
-      ? (activeEd.funnel?.find(x=>x.s==='Contacto')?.n ?? 0)
-      : (hx.empresaData ? Object.values(hx.empresaData).reduce((s,e)=>s+(e.funnel?.find(x=>x.s==='Contacto')?.n||0),0) : 0);
+      ? (activeEd.funnel?.find(x=>x.s==='Contacto (GP)')?.n ?? 0)
+      : (hx.empresaData ? Object.values(hx.empresaData).reduce((s,e)=>s+(e.funnel?.find(x=>x.s==='Contacto (GP)')?.n||0),0) : 0);
     rr       = empresa && hx.empresaData?.[empresa]
       ? (hx.empresaData[empresa].funnel?.find(x=>x.s==='Reunión')?.n || 0)
       : Object.values(hx.empresaData||{}).reduce((s,e2)=>s+(e2.funnel?.find(x=>x.s==='Reunión')?.n||0),0);
@@ -1293,19 +1315,19 @@ function renderBDM(){
   } else {
     document.getElementById('bdmCards').innerHTML=[
       kcard('Win Rate',wr,fP,20,'Meta: ≥ 20%',cWR),
-      kcard('Propuestas Enviadas',pr,fN,10,'Meta: ≥ 10 / mes',cP),
-      kcard('Reuniones Generadas',re,fN,20,'Total: Reunión + Propuesta + Neg. + Ganados',cR),
-      kcard('Total Contactados',co,fN,300,'Contacto → Reunión → Propuesta → Neg. + Ganados',cC),
+      kcard('Presupuestados',pr,fN,10,'Meta: ≥ 10 / mes · stages Presupuestado + Negociación',cP),
+      kcard('Reuniones Generadas',re,fN,20,'Stages Reunión + Presupuestado (todos los pipelines BDM)',cR),
+      kcard('Total Contactados BDM',co,fN,300,'Gestión BDM: Prospecto → Contacto(GP) → Perdido (excl. Contacto LUP)',cC),
       `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #3b82f6;border-radius:10px;padding:16px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-          <div class="lbl">En Contacto</div>
+          <div class="lbl">En Contacto (GP)</div>
           <span style="font-size:.75rem">✉️</span>
         </div>
         <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:6px">
           <div style="font-size:2rem;font-weight:800;color:#3b82f6;line-height:1">${fN(coActual)}</div>
-          <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">deals<br>en Contacto</div>
+          <div style="font-size:.72rem;color:var(--mu);padding-bottom:4px;line-height:1.3">deals<br>Contacto (GP)</div>
         </div>
-        <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Contacto (correos activos)${empresa?' · filtrado por empresa':''}</div>
+        <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals en etapa Contacto (GP) — gestión BDM${empresa?' · filtrado por empresa':''}</div>
       </div>`,
       `<div class="card" style="background:var(--s1);border:1px solid var(--bd);border-left:4px solid #8b5cf6;border-radius:10px;padding:16px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
@@ -1320,15 +1342,15 @@ function renderBDM(){
           <span>📋 ${rrOpen} pendientes</span>
           ${rrWon>0?`<span>✅ ${rrWon} ganados</span>`:''}
         </div>
-        <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals actualmente en etapa Reunión (pendientes de realizar)${empresa?' · filtrado por empresa':''}</div>
+        <div style="font-size:.67rem;color:#64748b;margin-top:6px">Deals en etapa Reunión — todos los pipelines BDM${empresa?' · filtrado por empresa':''}</div>
       </div>`,
     ].join('');
   }
 
   /* Tabla comparativa — si empresa tiene byUser, resalta deals en esa empresa */
   /* ── Tabla de deals individuales por cliente y etapa del embudo ── */
-  const stgBadgeColors={'Prospecto':'#64748b','Contacto':'#3b82f6','Reunión':'#8b5cf6','Propuesta Enviada':'#f59e0b','Negociación':'#22c55e'};
-  const stgOrder=['Negociación','Propuesta Enviada','Reunión','Contacto','Prospecto'];
+  const stgBadgeColors={'Prospecto':'#64748b','Contacto (GP)':'#3b82f6','Contacto (LUP)':'#06b6d4','Con tarea':'#f59e0b','Reunión':'#8b5cf6','Presupuestado':'#f97316','Negociación':'#a78bfa','Ganado':'#22c55e','Perdido':'#ef4444'};
+  const stgOrder=['Ganado','Presupuestado','Negociación','Reunión','Con tarea','Contacto (GP)','Contacto (LUP)','Prospecto','Perdido'];
   function stgBadge(s){const c=stgBadgeColors[s]||'#94a3b8';return`<span style="display:inline-block;padding:2px 9px;border-radius:99px;background:${c}22;color:${c};font-weight:700;font-size:.72rem;white-space:nowrap">${s}</span>`;}
 
   let vendorDeals = (VENDOR_DEALS[user]||[]);
@@ -1384,14 +1406,14 @@ function renderBDM(){
   ${Object.entries(BDM_HX).map(([nm,hd])=>{
     let w,p,r,c,pval;
     if(_DD && _DD.length){
-      /* Stats en tiempo real desde _DD — respeta filtro de mes */
-      const base2=_DD.filter(d=>d.pid===2 && d.own===nm && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)));
-      const wonM  =_DD.filter(d=>d.pid===2 && d.own===nm && d.st==='won'  && (!selMonth||d.add.startsWith(selMonth)));
+      /* Stats en tiempo real desde _DD — respeta filtro de mes · todos los pipelines BDM */
+      const base2=_DD.filter(d=>BDM_PIPES.has(d.pid) && d.own===nm && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)));
+      const wonM  =_DD.filter(d=>BDM_PIPES.has(d.pid) && d.own===nm && d.st==='won'  && (!selMonth||d.add.startsWith(selMonth)));
       const totalM=base2.length+wonM.length;
       w   = totalM>0 ? Math.round(wonM.length/totalM*100) : 0;
-      p   = base2.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
-      r   = base2.filter(d=>['Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
-      c   = base2.filter(d=>['Contacto','Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length;
+      p   = base2.filter(d=>['Presupuestado','Negociación'].includes(d.stg)).length;
+      r   = base2.filter(d=>['Reunión','Presupuestado'].includes(d.stg)).length;
+      c   = base2.filter(d=>d.stg!=='Contacto (LUP)').length;
       pval= base2.reduce((s,d)=>s+(d.val||0),0);
     } else {
       /* Fallback datos estáticos cuando _DD no está disponible */
@@ -1413,18 +1435,19 @@ function renderBDM(){
   </tbody></table>`;
 
   /* ── EMBUDO SVG por etapa: datos en tiempo real desde _DD cuando disponible ── */
-  const BDM_FUNNEL_STGS=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
+  /* Embudo con nuevos stages — excluye Ganado/Perdido que son estados terminales */
+  const BDM_FUNNEL_STGS=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
   let funData;
   if(_DD && _DD.length){
     const empLabel=empresa?(EMPRESA_DATA[empresa]?.label||empresa):null;
-    /* Embudo solo pipeline 2 (GRUPO PROGESTION) — respeta filtro de mes */
-    const base=_DD.filter(d=>d.pid===2 && d.own===user && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)) && (empLabel?d.emp===empLabel:true));
+    /* Embudo todos los pipelines BDM (excl. pipeline 9) */
+    const base=_DD.filter(d=>BDM_PIPES.has(d.pid) && d.own===user && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)) && (empLabel?d.emp===empLabel:true));
     funData=BDM_FUNNEL_STGS.map(s=>({s,n:base.filter(d=>d.stg===s).length}));
   } else {
     funData=activeEd.funnel||ed.funnel;
   }
   const maxN=Math.max(...funData.map(f=>f.n),1);
-  const stgColors=['#64748b','#3b82f6','#8b5cf6','#f59e0b','#22c55e'];
+  const stgColors=['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316'];
   const rowH=44, gap=6, W=520;
   const rows=funData.map((f,i)=>{
     const pct=f.n/maxN;
@@ -1459,16 +1482,16 @@ function renderBDM(){
     `<svg viewBox="0 0 ${W} ${totalH}" width="100%" style="max-height:260px">${rows}</svg>${byUserHTML}`;
 
   /* ── Tabla Pipeline Completo por Etapa ── */
-  const ALL_STG_ORDER=['Ganado','Negociación','Propuesta Enviada','Reunión','Contacto','Prospecto'];
-  const ALL_STG_COLOR={'Ganado':'#22c55e','Negociación':'#a78bfa','Propuesta Enviada':'#60a5fa','Reunión':'#f59e0b','Contacto':'#3b82f6','Prospecto':'#64748b'};
+  const ALL_STG_ORDER=['Ganado','Presupuestado','Negociación','Reunión','Con tarea','Contacto (GP)','Contacto (LUP)','Prospecto','Perdido'];
+  const ALL_STG_COLOR={'Ganado':'#22c55e','Presupuestado':'#f97316','Negociación':'#a78bfa','Reunión':'#8b5cf6','Con tarea':'#f59e0b','Contacto (GP)':'#3b82f6','Contacto (LUP)':'#06b6d4','Prospecto':'#64748b','Perdido':'#ef4444'};
   let allPipeDeals=[];
   if(_DD && _DD.length){
     const empF=empresa?(d=>d.emp===empresa):()=>true;
-    /* Open deals: todas las etapas del embudo */
-    const openD=_DD.filter(d=>d.pid===2 && d.own===user && d.st==='open'
+    /* Open deals: todos los pipelines BDM (excl. pipeline 9) */
+    const openD=_DD.filter(d=>BDM_PIPES.has(d.pid) && d.own===user && d.st==='open'
       && (!selMonth||d.add.startsWith(selMonth)) && empF(d));
     /* Won deals: marcar etapa como 'Ganado' */
-    const wonD=_DD.filter(d=>d.pid===2 && d.own===user && d.st==='won'
+    const wonD=_DD.filter(d=>BDM_PIPES.has(d.pid) && d.own===user && d.st==='won'
       && (!selMonth||d.add.startsWith(selMonth)) && empF(d));
     allPipeDeals=[
       ...openD.map(d=>({t:d.t, cli:d.org||d.per||'—', emp:d.emp||'—', s:d.stg, u:d.add||''})),
@@ -1545,10 +1568,65 @@ function renderBDM(){
   const wonTitle=empresa?`Valor ganado · ${ed.label}`:`Valor ganado por empresa · ${user}`;
   mkChart('cEmpresaVal',{type:'bar',data:{labels:empNames,datasets:[{label:'Valor ganado CLP$',data:empVals,backgroundColor:empPalette.slice(0,empNames.length),borderRadius:6}]},options:{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false},title:{display:true,text:wonTitle,color:FONT,font:{size:11}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},callback:v=>fM(v)}},y:{grid:{display:false},ticks:{color:FONT,font:{size:11}}}}}});
 
+  /* ── Deals por Stage y Pipeline — stacked bar por pipeline ── */
+  {
+    const PIPE_IDS  = [2,6,7,10,11,12];
+    const PIPE_LBLS = {2:'Grupo Progestion',6:'Audisis',7:'Trade MKT+SC',10:'Medical Talent',11:'Operaciones',12:'Permanent'};
+    const STAGES_PS = ['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+    const CLRS_PS   = ['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316'];
+
+    /* etiqueta */
+    const psLbl=document.getElementById('pipeStageLabel');
+    if(psLbl) psLbl.textContent=`· ${user}${empresa?' · '+empresa:''}${selMonth?' · '+selMonth:''}`;
+
+    /* datos: si _DD disponible usar API, sino statco */
+    let datasets_ps;
+    if(_DD && _DD.length){
+      const basePS=_DD.filter(d=>BDM_PIPES.has(d.pid)&&d.own===user&&d.st==='open'
+                               &&(!selMonth||d.add.startsWith(selMonth))
+                               &&(empresa?d.emp===empresa:true));
+      datasets_ps=STAGES_PS.map((s,i)=>({
+        label:s,
+        backgroundColor:CLRS_PS[i],
+        borderRadius:3,
+        data:PIPE_IDS.map(pid=>basePS.filter(d=>d.pid===pid&&d.stg===s).length)
+      }));
+    } else {
+      datasets_ps=STAGES_PS.map((s,i)=>({
+        label:s, backgroundColor:CLRS_PS[i], borderRadius:3,
+        data:PIPE_IDS.map(()=>0)
+      }));
+    }
+
+    mkChart('cPipeStage',{
+      type:'bar',
+      data:{
+        labels:PIPE_IDS.map(id=>PIPE_LBLS[id]),
+        datasets:datasets_ps
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{color:FONT,font:{size:10},boxWidth:12}},
+          datalabels:{
+            display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,
+            anchor:'center', align:'center',
+            color:'#fff', font:{size:9,weight:'bold'},
+            formatter:v=>v
+          }
+        },
+        scales:{
+          x:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:11}}},
+          y:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:10},stepSize:1}}
+        }
+      }
+    });
+  }
+
   /* ── Clientes GP contactados por etapa — solo empresas del BDM seleccionado ── */
   const empKeys=(hx.empresas||Object.keys(EMPRESA_DATA).filter(k=>k!==''));
-  const stgDef=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
-  const stgColors3=['#64748b','#3b82f6','#8b5cf6','#f59e0b','#22c55e'];
+  const stgDef=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+  const stgColors3=['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316'];
   const dlC={anchor:'center',align:'center',color:'#fff',font:{weight:'bold',size:9},
     display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0, formatter:v=>v};
   mkChart('cClientesEtapa',{
@@ -1562,7 +1640,7 @@ function renderBDM(){
         data:empKeys.map(k=>{
           /* Si _DD disponible, usar conteo real del BDM en esa empresa */
           if(_DD && _DD.length){
-            return _DD.filter(d=>d.own===user && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)) && d.emp===(EMPRESA_DATA[k].label||k) && d.stg===s).length;
+            return _DD.filter(d=>BDM_PIPES.has(d.pid) && d.own===user && d.st==='open' && (!selMonth||d.add.startsWith(selMonth)) && d.emp===(EMPRESA_DATA[k].label||k) && d.stg===s).length;
           }
           const f=EMPRESA_DATA[k].funnel.find(x=>x.s===s);
           return f?f.n:0;
@@ -1604,12 +1682,12 @@ function renderBDM(){
     }
     let h12;
     if(_DD && _DD.length){
-      /* Datos reales desde _DD: contar deals agregados en cada mes */
-      const base=(m)=>_DD.filter(d=>d.pid===2&&d.own===user&&d.add.startsWith(m.val));
+      /* Datos reales desde _DD: todos los pipelines BDM */
+      const base=(m)=>_DD.filter(d=>BDM_PIPES.has(d.pid)&&d.own===user&&d.add.startsWith(m.val));
       h12={
         meses:_win.map(m=>m.lbl),
-        reuniones:_win.map(m=>base(m).filter(d=>['Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length),
-        propuestas:_win.map(m=>base(m).filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length),
+        reuniones:_win.map(m=>base(m).filter(d=>['Reunión','Presupuestado'].includes(d.stg)).length),
+        propuestas:_win.map(m=>base(m).filter(d=>['Presupuestado','Negociación'].includes(d.stg)).length),
         winRate:_win.map(m=>{const b=base(m);const w=b.filter(d=>d.st==='won').length;const l=b.filter(d=>d.st==='lost').length;return(w+l)>0?Math.round(w/(w+l)*100):null;})
       };
     } else {
@@ -1698,8 +1776,8 @@ function renderBdmComp(){
   const user = window._bdmCompUser || '';
   const dd   = window._bdmCompDD;
 
-  const STGS  = ['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
-  const CLRS  = ['#64748b','#3b82f6','#8b5cf6','#f59e0b','#22c55e'];
+  const STGS  = ['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+  const CLRS  = ['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316'];
   const pad   = n => String(n).padStart(2,'0');
   const fmtD  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const DAYS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -1716,7 +1794,7 @@ function renderBdmComp(){
     labelA = `Hoy · ${dName(fromA)} ${fromA.substring(8)}/${fromA.substring(5,7)}`;
     labelB = `Ayer · ${dName(fromB)} ${fromB.substring(8)}/${fromB.substring(5,7)}`;
   } else {
-    /* ── Semana ISO 8601: lunes→domingo, numeración estándar ISO ── */
+    /* ── Semana laboral: lunes→viernes ── */
     function isoWk(d){
       const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
       const dow=dt.getUTCDay()||7;
@@ -1729,20 +1807,26 @@ function renderBdmComp(){
       dt.setDate(dt.getDate()-dow+1); return dt;
     }
     const thisWmon=isoMon(now);
+    /* Viernes de esta semana = lunes + 4 días */
+    const thisWfri=new Date(thisWmon); thisWfri.setDate(thisWmon.getDate()+4);
+    /* toA: si hoy es sáb(6) o dom(0) usar el viernes de esta semana, sino hoy */
+    const todayDow=now.getDay();
+    const toADate=(todayDow===0||todayDow===6) ? thisWfri : now;
+    /* Semana anterior: lunes → viernes */
     const lastWmon=new Date(thisWmon); lastWmon.setDate(thisWmon.getDate()-7);
-    const lastWsun=new Date(thisWmon); lastWsun.setDate(thisWmon.getDate()-1);
+    const lastWfri=new Date(lastWmon); lastWfri.setDate(lastWmon.getDate()+4);
     const wA=isoWk(now), wB=isoWk(lastWmon);
-    fromA=fmtD(thisWmon); toA=today;
-    fromB=fmtD(lastWmon); toB=fmtD(lastWsun);
+    fromA=fmtD(thisWmon); toA=fmtD(toADate);
+    fromB=fmtD(lastWmon); toB=fmtD(lastWfri);
     labelA=`Semana ${pad(wA.n)} · ${wA.yr}  (${fromA.substring(5)} → ${toA.substring(5)})`;
     labelB=`Semana ${pad(wB.n)} · ${wB.yr}  (${fromB.substring(5)} → ${toB.substring(5)})`;
   }
 
   function inRange(add, from, to){ return add >= from && add <= to; }
 
-  const dataA = dd ? STGS.map(s => dd.filter(d => d.pid===2 && d.own===user && d.stg===s && inRange(d.add,fromA,toA)).length)
+  const dataA = dd ? STGS.map(s => dd.filter(d => BDM_PIPES.has(d.pid) && d.own===user && d.stg===s && inRange(d.add,fromA,toA)).length)
                    : STGS.map(()=>0);
-  const dataB = dd ? STGS.map(s => dd.filter(d => d.pid===2 && d.own===user && d.stg===s && inRange(d.add,fromB,toB)).length)
+  const dataB = dd ? STGS.map(s => dd.filter(d => BDM_PIPES.has(d.pid) && d.own===user && d.stg===s && inRange(d.add,fromB,toB)).length)
                    : STGS.map(()=>0);
 
   /* % variación por etapa */
@@ -1756,7 +1840,7 @@ function renderBdmComp(){
 
   /* Info bar */
   const info = document.getElementById('bdmCompInfo');
-  if(info) info.innerHTML = `<strong>${labelA}</strong>&nbsp;&nbsp;vs&nbsp;&nbsp;<strong>${labelB}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;BDM: <strong style="color:#60a5fa">${user}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Pipeline: Grupo Progestion`;
+  if(info) info.innerHTML = `<strong>${labelA}</strong>&nbsp;&nbsp;vs&nbsp;&nbsp;<strong>${labelB}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;BDM: <strong style="color:#60a5fa">${user}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;Todos los pipelines BDM (excl. BBDD LevelUp)`;
 
   /* Toggle buttons */
   ['btnCompDay','btnCompWeek'].forEach(id => {
@@ -1820,6 +1904,53 @@ function renderBdmComp(){
       }
     }
   });
+
+  /* ── Tabla de deals visibles en el gráfico ── */
+  const compDealsEl = document.getElementById('bdmCompDeals');
+  if(compDealsEl && dd){
+    const STG_CLR = {'Prospecto':'#64748b','Contacto':'#3b82f6','Reunión':'#8b5cf6','Propuesta Enviada':'#f59e0b','Negociación':'#22c55e'};
+    function makeRows(deals){
+      if(!deals.length) return `<tr><td colspan="4" style="padding:10px 12px;text-align:center;color:var(--mu);font-size:.78rem">Sin deals en este período</td></tr>`;
+      return deals.map(d=>{
+        const sc=STG_CLR[d.stg]||'#94a3b8';
+        return `<tr style="border-bottom:1px solid var(--bd)">
+          <td style="padding:6px 12px;font-weight:600;font-size:.79rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.t}">${d.t}</td>
+          <td style="padding:6px 12px;font-size:.76rem;color:var(--mu);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.org||d.per||'—'}</td>
+          <td style="padding:6px 12px;font-size:.76rem;color:var(--mu)">${d.emp||'—'}</td>
+          <td style="padding:6px 12px"><span style="display:inline-block;padding:2px 8px;border-radius:99px;background:${sc}22;color:${sc};font-weight:700;font-size:.70rem;white-space:nowrap">${d.stg}</span></td>
+          <td style="padding:6px 12px;font-size:.75rem;color:var(--mu);white-space:nowrap">${d.add}</td>
+        </tr>`;
+      }).join('');
+    }
+    const dealsA=dd.filter(d=>BDM_PIPES.has(d.pid) && d.own===user && inRange(d.add,fromA,toA));
+    const dealsB=dd.filter(d=>BDM_PIPES.has(d.pid) && d.own===user && inRange(d.add,fromB,toB));
+    const thead=`<thead><tr style="border-bottom:2px solid var(--bd)">
+      <th style="padding:5px 12px;text-align:left;font-size:.70rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Deal</th>
+      <th style="padding:5px 12px;text-align:left;font-size:.70rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Cliente</th>
+      <th style="padding:5px 12px;text-align:left;font-size:.70rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Empresa GP</th>
+      <th style="padding:5px 12px;text-align:left;font-size:.70rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Etapa</th>
+      <th style="padding:5px 12px;text-align:left;font-size:.70rem;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Creado</th>
+    </tr></thead>`;
+    compDealsEl.innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <div style="font-size:.75rem;font-weight:700;color:#60a5fa;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#60a5fa;display:inline-block"></span>
+            ${labelA} <span style="opacity:.55;font-weight:400">(${dealsA.length})</span>
+          </div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">${thead}<tbody>${makeRows(dealsA)}</tbody></table></div>
+        </div>
+        <div>
+          <div style="font-size:.75rem;font-weight:700;color:#94a3b8;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block"></span>
+            ${labelB} <span style="opacity:.55;font-weight:400">(${dealsB.length})</span>
+          </div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">${thead}<tbody>${makeRows(dealsB)}</tbody></table></div>
+        </div>
+      </div>`;
+  } else if(compDealsEl){
+    compDealsEl.innerHTML='';
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -1881,8 +2012,11 @@ const LU_BBDD_SCRIPTS = {
   }
 };
 
+let _GPD_loading=false;
 async function initGP(){
-  if(_GPD!==null){renderGP();return;}
+  if(Array.isArray(_GPD)){renderGP();return;}
+  if(_GPD_loading) return; /* evita doble carga paralela */
+  _GPD_loading=true;
 
   /* ── Show loading ── */
   const gpMain=document.getElementById('gpMain');
@@ -1899,84 +2033,69 @@ async function initGP(){
   _GPD_pipes=[];
   _GPD_err=null;
 
+  /* Helper: fetch con fallback silencioso */
+  async function gpFetch(url){
+    return fetch(url,{headers:{'x-api-token':DASH_TK}})
+      .then(r=>r.json())
+      .catch(e=>{console.warn('GP fetch error:',url,e);return{data:null,additional_data:{}};});
+  }
+
   try{
-    /* ── Paso 1: Descubrir pipelines BBDD Unificada LevelUp ── */
-    if(gpMsg) gpMsg.textContent='Descubriendo pipelines LevelUp en PipeDrive…';
-    const pr=await fetch('https://api.pipedrive.com/v1/pipelines',{
-      headers:{'x-api-token':DASH_TK}
-    }).then(r=>r.json());
-
+    /* ── Paso 1: Pipelines LevelUp (IDs fijos: 6=Audisis, 7=Trade MKT+SC, 9=BBDD) ── */
+    if(gpMsg) gpMsg.textContent='Conectando con PipeDrive…';
+    const pr=await gpFetch('https://api.pipedrive.com/v1/pipelines');
     const allPipes=pr.data||[];
-    /* Pipelines LevelUp: 6=Audisis, 7=Trade MKT+Supply Chain, 9=BBDD Unificada LevelUp */
     const LU_PIPE_IDS=[6,7,9];
-    const luPipes=allPipes.filter(p=>LU_PIPE_IDS.includes(p.id));
-    const pipeIds=LU_PIPE_IDS; /* hardcoded — no depende de nombre */
-    _GPD_pipes=allPipes.filter(p=>pipeIds.includes(p.id));
-    if(gpMsg) gpMsg.textContent=`${pipeIds.length} pipeline(s) LevelUp encontrados…`;
+    _GPD_pipes=allPipes.filter(p=>LU_PIPE_IDS.includes(p.id));
+    if(gpMsg) gpMsg.textContent=`${LU_PIPE_IDS.length} pipelines LevelUp encontrados…`;
 
-    /* ── Paso 2: Etapas de los pipelines encontrados ── */
-    for(const pid of pipeIds){
-      try{
-        const sr=await fetch(`https://api.pipedrive.com/v1/stages?pipeline_id=${pid}`,{
-          headers:{'x-api-token':DASH_TK}
-        }).then(r=>r.json());
-        (sr.data||[]).forEach(s=>{_GPD_stages[s.id]=s.name;});
-      }catch(e){console.warn('Stages pid='+pid,e);}
-    }
+    /* ── Paso 2: Etapas en paralelo ── */
+    await Promise.all(LU_PIPE_IDS.map(async pid=>{
+      const sr=await gpFetch(`https://api.pipedrive.com/v1/stages?pipeline_id=${pid}`);
+      (sr.data||[]).forEach(s=>{_GPD_stages[s.id]=s.name;});
+    }));
 
-    /* ── Paso 3: Todos los deals de los pipelines LevelUp (sin filtro de owner) ── */
-    for(const pid of pipeIds){
+    /* ── Paso 3: Deals abiertos — un pipeline a la vez para respetar paginación ── */
+    for(const pid of LU_PIPE_IDS){
       const pname=allPipes.find(p=>p.id===pid)?.name||('Pipeline '+pid);
-      for(const status of ['open']){ /* solo tratos abiertos = vista kanban PipeDrive */
-        if(gpMsg) gpMsg.textContent=`${pname} — ${status}…`;
-        let s=0,more=true;
-        while(more){
-          const r=await fetch(
-            `https://api.pipedrive.com/v1/pipelines/${pid}/deals?status=${status}&limit=100&start=${s}`,
-            {headers:{'x-api-token':DASH_TK}}
-          ).then(r=>r.json());
-          const data=r.data||[];
-          data.forEach(d=>{
-            const empId=parseInt(d[DASH_EK]);
-            /* Clasificación vertical: intentar por empresa, etapa, título y pipeline */
-            const empStr   = DASH_EM[empId]||'';
-            const stgName  = _GPD_stages[d.stage_id]||('Etapa '+d.stage_id);
-            const titleLow = (d.title||'').toLowerCase();
-            const stageLow = stgName.toLowerCase();
-            const pipeLow  = pname.toLowerCase();
-            /* Vertical por pipeline ID: 6=Audisis, 7=Trade MKT+SC, 9=BBDD LevelUp */
-            let vert='BBDD LevelUp';
-            if(pid===6)      vert='Audisis';
-            else if(pid===7) vert='Trade MKT + SC';
-            all.push({
-              id:d.id, t:d.title||'', o:d.org_name||'', per:d.person_name||'',
-              own:d.owner_name||'',
-              v:d.value||0,
-              s:stgName, st:d.status, pid, pname,
-              add:(d.add_time||'').substring(0,10),
-              upd:(d.update_time||'').substring(0,10),
-              emp:empStr, vert,  /* vert = vertical clasificado en carga */
-              orig: d.origin||''  /* Origen de la fuente: API | ManuallyCreated | Import */
-            });
+      if(gpMsg) gpMsg.textContent=`Cargando ${pname}…`;
+      let s=0,more=true;
+      while(more){
+        const r=await gpFetch(
+          `https://api.pipedrive.com/v1/pipelines/${pid}/deals?status=open&limit=100&start=${s}`
+        );
+        const data=r.data||[];
+        data.forEach(d=>{
+          const empId=parseInt(d[DASH_EK]);
+          const stgName=_GPD_stages[d.stage_id]||('Etapa '+d.stage_id);
+          let vert='BBDD LevelUp';
+          if(pid===6) vert='Audisis';
+          else if(pid===7) vert='Trade MKT + SC';
+          all.push({
+            id:d.id, t:d.title||'', o:d.org_name||'', per:d.person_name||'',
+            own:d.owner_name||'', v:d.value||0,
+            s:stgName, st:d.status, pid, pname,
+            add:(d.add_time||'').substring(0,10),
+            upd:(d.update_time||'').substring(0,10),
+            emp:DASH_EM[empId]||'', vert,
+            orig:d.origin||''
           });
-          more=r.additional_data?.pagination?.more_items_in_collection||false;
-          s+=100;
-        }
+        });
+        more=r.additional_data?.pagination?.more_items_in_collection||false;
+        s+=100;
       }
     }
 
     _GPD=all;
-    /* Poblar selEmpresaGP con organizaciones reales desde API */
-    (function(){
-      const orgs=[...new Set(_GPD.filter(d=>d.st==='open').map(d=>d.o).filter(Boolean))].sort();
-      const orgSel=document.getElementById('selEmpresaGP');
-      if(orgSel) orgSel.innerHTML='<option value="">Todas las organizaciones</option>'+orgs.map(o=>`<option value="${o}">${o}</option>`).join('');
-    })();
+    /* Poblar selector de organizaciones */
+    const orgs=[...new Set(_GPD.filter(d=>d.st==='open').map(d=>d.o).filter(Boolean))].sort();
+    const orgSel=document.getElementById('selEmpresaGP');
+    if(orgSel) orgSel.innerHTML='<option value="">Todas las organizaciones</option>'+orgs.map(o=>`<option value="${o}">${o}</option>`).join('');
+
     const tag=document.getElementById('gpApiTag');
-    const pipeNames=_GPD_pipes.map(p=>p.name).join(' · ')||'Pipeline 9';
+    const pipeNames=_GPD_pipes.map(p=>p.name).join(' · ')||'Pipelines LevelUp';
     if(tag) tag.textContent=`${all.length} deals · ${pipeNames} · ${new Date().toLocaleTimeString('es-CL')}`;
 
-    /* ── Ocultar loading, mostrar contenido ── */
     if(gpLoad) gpLoad.style.display='none';
     if(gpMain) gpMain.style.display='block';
     renderGP();
@@ -1987,6 +2106,8 @@ async function initGP(){
     if(gpErr) gpErr.style.display='block';
     if(gpErrD) gpErrD.textContent=_GPD_err;
     console.error('initGP error:',err);
+  }finally{
+    _GPD_loading=false;
   }
 }
 
@@ -2376,43 +2497,54 @@ function recalcD(){
   D.openVal   = open.reduce((s,d)=>s+(d.val||0),0);
   D.wonVal    = won.reduce((s,d)=>s+(d.val||0),0);
 
-  const closed = won.length + lost.length;
-  D.winRate = closed>0 ? Math.round(won.length/closed*100) : 0;
+  /* Sólo BDM pipelines para winRate y wonMonth */
+  const wonBDM  = won.filter(d=>BDM_PIPES.has(d.pid));
+  const lostBDM = lost.filter(d=>BDM_PIPES.has(d.pid));
+  const closed = wonBDM.length + lostBDM.length;
+  D.winRate = closed>0 ? Math.round(wonBDM.length/closed*100) : 0;
 
-  const STGS=['Negociación','Propuesta Enviada','Reunión','Contacto','Prospecto'];
+  /* Ganados en el mes actual */
+  const nowYM = new Date().toISOString().substring(0,7);
+  D.wonMonth = wonBDM.filter(d=>(d.won||'').startsWith(nowYM)).length;
+
+  /* Usar solo deals de BDM_PIPES (excluye pipeline 9 BBDD LevelUp) */
+  const openBDM = open.filter(d=>BDM_PIPES.has(d.pid));
+  const STGS=['Presupuestado','Negociación','Reunión','Con tarea','Contacto (GP)','Contacto (LUP)','Prospecto'];
   D.funnel = STGS.map(name=>({
     name,
-    cnt: open.filter(d=>d.stg===name).length,
-    val: open.filter(d=>d.stg===name).reduce((s,d)=>s+(d.val||0),0)
+    cnt: openBDM.filter(d=>d.stg===name).length,
+    val: openBDM.filter(d=>d.stg===name).reduce((s,d)=>s+(d.val||0),0)
   }));
 
-  const W={'Negociación':.9,'Propuesta Enviada':.6,'Reunión':.3,'Contacto':.1,'Prospecto':.05};
-  D.weighted = open.reduce((s,d)=>s+(d.val||0)*(W[d.stg]||0),0);
-  D.ratio    = D.openVal>0 ? +((D.weighted/D.openVal)*100/100).toFixed(2) : 0;
+  const W={'Negociación':.80,'Presupuestado':.65,'Reunión':.40,'Con tarea':.25,'Contacto (GP)':.15,'Contacto (LUP)':.10,'Prospecto':.05};
+  D.openBDMVal = openBDM.reduce((s,d)=>s+(d.val||0),0);
+  D.weighted = openBDM.reduce((s,d)=>s+(d.val||0)*(W[d.stg]||0),0);
+  D.ratio    = D.openBDMVal>0 ? +((D.weighted/274000000)).toFixed(2) : 0; /* ratio vs cuota $274M */
 
-  /* Heinar */
-  const hOpen = open.filter(d=>d.own==='Heinar Lazcano');
+  /* Heinar — solo pipelines BDM */
+  const hOpen = open.filter(d=>d.own==='Heinar Lazcano' && BDM_PIPES.has(d.pid));
   D.heinar = {
-    reunion:   hOpen.filter(d=>d.stg==='Reunión').length,
-    propuesta: hOpen.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length,
+    reunion:    hOpen.filter(d=>d.stg==='Reunión').length,
+    propuesta:  hOpen.filter(d=>['Presupuestado','Negociación'].includes(d.stg)).length,
     negociacion:hOpen.filter(d=>d.stg==='Negociación').length,
-    contacto:  hOpen.filter(d=>d.stg==='Contacto').length,
-    conv:      hOpen.filter(d=>['Contacto','Reunión','Propuesta Enviada','Negociación'].includes(d.stg)).length,
-    total:     hOpen.length
+    contacto:   hOpen.filter(d=>d.stg==='Contacto (GP)').length,
+    /* conv: % tasa Reunión→Presupuestado (propuesta ÷ (reunion+propuesta) × 100) */
+    conv: (()=>{ const r=hOpen.filter(d=>d.stg==='Reunión').length, p=hOpen.filter(d=>['Presupuestado','Negociación'].includes(d.stg)).length; return (r+p)>0?Math.round(p/(r+p)*100):0; })(),
+    total:      hOpen.length
   };
 
-  /* Vendors */
+  /* Vendors — solo pipelines BDM */
   const VS=['Francisca Musso','Mario Germain','Andres Montoya','Jesus Montoya','Heinar Lazcano','Felipe Campos'];
   D.vendors = VS.map(name=>({
     name,
-    open: open.filter(d=>d.own===name).length,
-    won:  won.filter(d=>d.own===name).length,
-    val:  won.filter(d=>d.own===name).reduce((s,d)=>s+(d.val||0),0)
+    open: openBDM.filter(d=>d.own===name).length,
+    won:  won.filter(d=>d.own===name && BDM_PIPES.has(d.pid)).length,
+    val:  won.filter(d=>d.own===name && BDM_PIPES.has(d.pid)).reduce((s,d)=>s+(d.val||0),0)
   }));
 
   /* Top deals */
-  D.topDeals = open
-    .filter(d=>['Negociación','Propuesta Enviada'].includes(d.stg))
+  D.topDeals = openBDM
+    .filter(d=>['Presupuestado','Negociación'].includes(d.stg))
     .sort((a,b)=>(b.val||0)-(a.val||0)).slice(0,10)
     .map(d=>({t:d.t,v:d.val,o:d.own,s:d.stg}));
 
@@ -2423,15 +2555,19 @@ function recalcD(){
   D.mesActual = now.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
 
   /* ── Actualizar BDM_HX con counts reales del mes actual desde _DD ── */
-  const RD_STGS = ['Reunión','Propuesta Enviada','Negociación','Ganado'];
+  /* KPI Reuniones Generadas = Reunión + Presupuestado; KPI Contactos = todos excl. Contacto(LUP) */
+  const RD_STGS_NEW = ['Reunión','Presupuestado','Negociación','Ganado'];
+  const BDM_FUNNEL_NEW = ['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
   Object.keys(BDM_HX).forEach(rep=>{
     const hx = BDM_HX[rep];
-    const repDeals = open.filter(d=>d.own===rep);
+    const repDeals = openBDM.filter(d=>d.own===rep);
     const last = hx.meses.length - 1;
-    /* Reuniones: deals en etapa Reunión o etapas posteriores (abiertos) */
-    const reunCount = repDeals.filter(d=>RD_STGS.includes(d.stg)).length;
-    const propCount = repDeals.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
-    const contCount = repDeals.filter(d=>d.stg==='Contacto').length;
+    /* KPI Reuniones Generadas: Reunión + Presupuestado */
+    const reunCount = repDeals.filter(d=>['Reunión','Presupuestado'].includes(d.stg)).length;
+    /* KPI Presupuestados */
+    const propCount = repDeals.filter(d=>['Presupuestado','Negociación'].includes(d.stg)).length;
+    /* KPI Contactos BDM: todos excepto Contacto(LUP) */
+    const contCount = repDeals.filter(d=>d.stg!=='Contacto (LUP)').length;
     /* Actualizar sólo el mes más reciente en los arrays históricos */
     if(reunCount > 0 || hx.meses.length === 1) hx.reuniones[last] = reunCount;
     if(propCount > 0 || hx.meses.length === 1) hx.propuestas[last] = propCount;
@@ -2439,9 +2575,10 @@ function recalcD(){
     /* Actualizar stageVal desde deals reales */
     hx.stageVal = {
       Negociación:    repDeals.filter(d=>d.stg==='Negociación').reduce((s,d)=>s+(d.val||0),0),
-      PropuestaEnviada: repDeals.filter(d=>d.stg==='Propuesta Enviada').reduce((s,d)=>s+(d.val||0),0),
+      Presupuestado:  repDeals.filter(d=>d.stg==='Presupuestado').reduce((s,d)=>s+(d.val||0),0),
       Reunión:        repDeals.filter(d=>d.stg==='Reunión').reduce((s,d)=>s+(d.val||0),0),
-      Contacto:       repDeals.filter(d=>d.stg==='Contacto').reduce((s,d)=>s+(d.val||0),0),
+      'Con tarea':    repDeals.filter(d=>d.stg==='Con tarea').reduce((s,d)=>s+(d.val||0),0),
+      'Contacto (GP)':repDeals.filter(d=>d.stg==='Contacto (GP)').reduce((s,d)=>s+(d.val||0),0),
       Prospecto:      repDeals.filter(d=>d.stg==='Prospecto').reduce((s,d)=>s+(d.val||0),0)
     };
     /* Actualizar funnel por empresa en empresaData si existe */
@@ -2449,10 +2586,10 @@ function recalcD(){
       Object.keys(hx.empresaData).forEach(emp=>{
         const empDeals = repDeals.filter(d=>d.emp===emp);
         const ed = hx.empresaData[emp];
-        ed.reuniones = empDeals.filter(d=>RD_STGS.includes(d.stg)).length;
-        ed.propuestas = empDeals.filter(d=>['Propuesta Enviada','Negociación'].includes(d.stg)).length;
-        ed.contactos  = empDeals.filter(d=>d.stg==='Contacto').length;
-        ed.funnel = ['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación']
+        ed.reuniones = empDeals.filter(d=>['Reunión','Presupuestado'].includes(d.stg)).length;
+        ed.propuestas = empDeals.filter(d=>['Presupuestado','Negociación'].includes(d.stg)).length;
+        ed.contactos  = empDeals.filter(d=>d.stg==='Contacto (GP)').length;
+        ed.funnel = BDM_FUNNEL_NEW
           .map(s=>({s, n: empDeals.filter(d=>d.stg===s).length}));
       });
     }
@@ -2520,18 +2657,30 @@ const DASH_TK='56b57304b126a250f55558004951f10055d3bd59';
 const DASH_EK='f13f3b010c13b30a8c840e4f95cfc94d153e80ff';
 const DASH_EM={56:'Progestion',57:'Audisis',58:'Ensti',59:'Crece',60:'Disecom Trade',61:'Disecom Logística',62:'Disecom D&P',104:'Proventas',105:'Medical Talent',106:'Permanent Placement'};
 const DASH_SM={
-  /* Pipeline 2 - GRUPO PROGESTION */
-  6:'Prospecto',7:'Contacto',8:'Reunión',9:'Propuesta Enviada',10:'Negociación',
+  /* Pipeline 2 - GRUPO PROGESTION (legacy) */
+  6:'Prospecto',7:'Contacto (GP)',8:'Reunión',9:'Presupuestado',10:'Negociación',
   /* Pipeline 3 - POST-VENTA */
   11:'Onboarding',12:'Primer Mes',13:'Seguimiento Mensual',14:'Eval. Trimestral',15:'Renovación/Expansión',
   /* Pipeline 4 - CROSS SELLING */
-  16:'Contacto',17:'Reunión',18:'Propuesta Enviada',19:'Negociación',
+  16:'Contacto (GP)',17:'Reunión',18:'Presupuestado',19:'Negociación',
   /* Pipeline 5 - PERU */
-  20:'Calificado',21:'Contacto establecido',22:'Demo programada',23:'Propuesta enviada',24:'Negociación comenzada'
+  20:'Calificado',21:'Contacto establecido',22:'Demo programada',23:'Propuesta enviada',24:'Negociación comenzada',
+  /* Pipeline 6 - Audisis */
+  25:'Prospecto',62:'Contacto (GP)',26:'Contacto (LUP)',27:'Con tarea',28:'Reunión',29:'Presupuestado',30:'Ganado',31:'Perdido',
+  /* Pipeline 7 - Trade MKT + Supply Chain */
+  32:'Prospecto',61:'Contacto (GP)',33:'Contacto (LUP)',34:'Con tarea',35:'Reunión',36:'Presupuestado',52:'Ganado',53:'Perdido',
+  /* Pipeline 10 - Medical Talent */
+  58:'Prospecto',54:'Contacto (GP)',55:'Reunión',56:'Presupuestado',57:'Negociación',59:'Ganado',60:'Perdido',
+  /* Pipeline 11 - Operaciones (Out) */
+  63:'Prospecto',64:'Contacto (GP)',65:'Contacto (LUP)',66:'Con tarea',67:'Reunión',68:'Presupuestado',69:'Ganado',70:'Perdido',
+  /* Pipeline 12 - Permanent (Payroll+HH) */
+  71:'Prospecto',72:'Contacto (GP)',73:'Contacto (LUP)',74:'Con tarea',75:'Reunión',76:'Presupuestado',77:'Ganado',78:'Perdido'
 };
-const DASH_STGS=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación','Onboarding','Primer Mes','Seguimiento Mensual','Eval. Trimestral','Renovación/Expansión'];
-const DASH_COL={Prospecto:'#64748b',Contacto:'#3b82f6','Reunión':'#f59e0b','Propuesta Enviada':'#8b5cf6','Negociación':'#22c55e',Onboarding:'#14b8a6','Primer Mes':'#06b6d4','Seguimiento Mensual':'#0ea5e9','Eval. Trimestral':'#3b82f6','Renovación/Expansión':'#6366f1','Calificado':'#84cc16','Contacto establecido':'#22c55e','Demo programada':'#f59e0b','Propuesta enviada':'#f97316','Negociación comenzada':'#ef4444'};
-const DASH_WTS={Prospecto:.1,Contacto:.2,'Reunión':.4,'Propuesta Enviada':.6,'Negociación':.8,Onboarding:1,'Primer Mes':1,'Seguimiento Mensual':1,'Eval. Trimestral':1,'Renovación/Expansión':1,Calificado:.3,'Contacto establecido':.4,'Demo programada':.5,'Propuesta enviada':.65,'Negociación comenzada':.8};
+/* Pipelines BDM: todos excepto pipeline 9 (BBDD Unificada LevelUp) */
+const BDM_PIPES=new Set([2,6,7,10,11,12]);
+const DASH_STGS=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado','Ganado','Perdido','Negociación','Onboarding','Primer Mes','Seguimiento Mensual','Eval. Trimestral','Renovación/Expansión'];
+const DASH_COL={'Prospecto':'#64748b','Contacto (GP)':'#3b82f6','Contacto (LUP)':'#06b6d4','Con tarea':'#f59e0b','Reunión':'#8b5cf6','Presupuestado':'#f97316','Ganado':'#22c55e','Perdido':'#ef4444','Negociación':'#a78bfa',Onboarding:'#14b8a6','Primer Mes':'#06b6d4','Seguimiento Mensual':'#0ea5e9','Eval. Trimestral':'#3b82f6','Renovación/Expansión':'#6366f1',Calificado:'#84cc16','Contacto establecido':'#22c55e','Demo programada':'#f59e0b','Propuesta enviada':'#f97316','Negociación comenzada':'#ef4444'};
+const DASH_WTS={'Prospecto':.05,'Contacto (GP)':.15,'Contacto (LUP)':.10,'Con tarea':.25,'Reunión':.40,'Presupuestado':.65,'Ganado':1,'Perdido':0,'Negociación':.80,Onboarding:1,'Primer Mes':1,'Seguimiento Mensual':1,'Eval. Trimestral':1,'Renovación/Expansión':1,Calificado:.3,'Contacto establecido':.4,'Demo programada':.5,'Propuesta enviada':.65,'Negociación comenzada':.8};
 let _DD=null,_dch={};
 let _GPD=null,_GPD_stages={},_GPD_pipes=[],_GPD_err=null; /* GP live API data */
 
@@ -2562,11 +2711,11 @@ async function initDashboard(){
   function md(d,forcePid){
     const empId=parseInt(d[DASH_EK]);
     const actualPid=forcePid||d.pipeline_id||0;
-    const pipeName={2:'GRUPO PROGESTION',3:'POST-VENTA',4:'CROSS SELLING',5:'GP PERÚ'}[actualPid]||('Pipeline '+actualPid);
+    const pipeName={2:'GRUPO PROGESTION',3:'POST-VENTA',4:'CROSS SELLING',5:'GP PERÚ',6:'Audisis',7:'Trade MKT + SC',9:'BBDD LevelUp',10:'Medical Talent',11:'Operaciones',12:'Permanent'}[actualPid]||('Pipeline '+actualPid);
     return{id:d.id,t:d.title||'',own:d.owner_name||'',org:d.org_name||'',per:d.person_name||'',
       val:d.value||0,stg:DASH_SM[d.stage_id]||('Stage '+d.stage_id),st:d.status,
       add:(d.add_time||'').substring(0,10),
-      won:(d.won_time||'').substring(0,10),
+      won:(d.won_time||d.close_time||'').substring(0,10),
       lbl:d.label||'',emp:DASH_EM[empId]||'',pid:actualPid,pipe:pipeName};
   }
   /* Descarga todas las páginas de un pipeline+estado en secuencia (paginación obligatoria) */
@@ -2597,23 +2746,25 @@ async function initDashboard(){
   }
 
   try{
-    /* ══ FASE 1: Pipeline 2 (GRUPO PROGESTION) — open+won+lost en paralelo ══
-       Objetivo: poblar _DD con datos BDM lo antes posible (~1 request round-trip) */
-    if(msg) msg.textContent='Cargando pipeline comercial…';
-    const [p2open,p2won,p2lost]=await Promise.all([
-      fetchAllPages(2,'open'),
-      fetchAllPages(2,'won'),
-      fetchAllPages(2,'lost')
-    ]);
-    flushDD([...p2open,...p2won,...p2lost]);
-    /* Mostrar contenido del Dashboard con datos de Pipeline 2 — sin esperar pipelines secundarios */
+    /* ══ FASE 1: Todos los pipelines BDM en paralelo ══
+       Deals migrados: Progestion→p11, Audisis→p6, Disecom→p7, MedicalTalent→p10
+       Cargamos los 6 pipelines BDM juntos para tener datos completos desde el inicio */
+    if(msg) msg.textContent='Cargando pipelines BDM…';
+    const bdmPids=[2,6,7,10,11,12];
+    const bdmTasks=bdmPids.flatMap(pid=>
+      ['open','won','lost'].map(st=>fetchAllPages(pid,st))
+    );
+    const bdmSettled=await Promise.allSettled(bdmTasks);
+    const bdmDeals=bdmSettled.flatMap(r=>r.status==='fulfilled'?r.value:[]);
+    flushDD(bdmDeals);
+    /* Mostrar dashboard con datos BDM completos */
     if(dashLoad) dashLoad.style.display='none';
     if(dashMain) dashMain.style.display='block';
     recalcD();
     if(document.getElementById('tab-dash')?.classList.contains('active')) renderDash();
 
-    /* ══ FASE 2: Pipelines 3,4,5 — todos en paralelo en background ══
-       Necesarios para KPIs globales, Post-venta, Cross-selling, Perú */
+    /* ══ FASE 2: Pipelines no-BDM en background ══
+       Post-venta (3), Cross Selling (4), Perú (5); excluye 9 (BBDD LevelUp → initGP) */
     if(msg) msg.textContent='Cargando pipelines secundarios…';
     const bgTasks=[3,4,5].flatMap(pid=>
       ['open','won','lost'].map(st=>fetchAllPages(pid,st))
@@ -2669,6 +2820,7 @@ function renderDash(){
   renderDashOwnerDeals(fd);
   renderDashStageDonut(fd);
   renderDashEmpresa(fd);
+  renderDashPipelineStage(fd);
   renderDashTop(fd);
   renderDashOwnerAnalysis(fd);
   renderDashWeighted(fd);
@@ -2676,13 +2828,44 @@ function renderDash(){
   renderDashTable(fd,1);
 }
 
+function renderDashPipelineStage(fd){
+  /* Deals por Stage y Pipeline — stacked bar, solo pipelines BDM, solo open */
+  const PIPE_IDS=[2,6,7,10,11,12];
+  const PIPE_LBLS={2:'Grupo Progestion',6:'Audisis',7:'Trade MKT+SC',10:'Medical Talent',11:'Operaciones',12:'Permanent'};
+  const STAGES_PS=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+  const CLRS_PS=['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316'];
+  const open=fd.filter(d=>BDM_PIPES.has(d.pid)&&d.st==='open');
+  const labels=PIPE_IDS.map(p=>PIPE_LBLS[p]);
+  const datasets=STAGES_PS.map((s,i)=>({
+    label:s,
+    data:PIPE_IDS.map(p=>open.filter(d=>d.pid===p&&d.stg===s).length),
+    backgroundColor:CLRS_PS[i],
+    borderRadius:3,
+    stack:'s'
+  }));
+  const totals=PIPE_IDS.map(p=>open.filter(d=>d.pid===p).length);
+  mkD('dchDashPipeStage',{type:'bar',data:{labels,datasets},options:{
+    ...baseOpts(),
+    scales:{
+      x:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT,font:{size:11}}},
+      y:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}}
+    },
+    plugins:{
+      ...baseOpts().plugins,
+      legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{footer:items=>`Total pipeline: ${totals[items[0].dataIndex]}`}}
+    }
+  }});
+}
+
 function renderDashCards(fd){
-  /* Funnel stages = Prospecto+Contacto+Reunión+Propuesta Enviada+Negociación
-     ABIERTOS = solo deals abiertos en esas 5 etapas del embudo comercial */
-  const FUNNEL_STGS=['Prospecto','Contacto','Reunión','Propuesta Enviada','Negociación'];
-  const op=fd.filter(d=>d.st==='open'&&FUNNEL_STGS.includes(d.stg));
-  const opAll=fd.filter(d=>d.st==='open'); /* total abiertos (todos los stages) */
-  const wn=fd.filter(d=>d.st==='won'),ls=fd.filter(d=>d.st==='lost');
+  /* Nuevas reglas BDM: pipelines BDM (excluye p9 BBDD LevelUp)
+     Contactos BDM = todo excepto Contacto(LUP) — gestión de LevelUp */
+  const BDM_FUNNEL=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+  const bdm=fd.filter(d=>BDM_PIPES.has(d.pid));
+  const op=bdm.filter(d=>d.st==='open'&&BDM_FUNNEL.includes(d.stg));
+  const opAll=bdm.filter(d=>d.st==='open');
+  const wn=bdm.filter(d=>d.st==='won'),ls=bdm.filter(d=>d.st==='lost');
   const opV=op.reduce((s,d)=>s+d.val,0),wnV=wn.reduce((s,d)=>s+d.val,0);
   const wr=wn.length+ls.length>0?+(wn.length/(wn.length+ls.length)*100).toFixed(1):0;
   const wrCol=wr>=25?'#22c55e':wr>=15?'#eab308':'#ef4444';
@@ -2743,17 +2926,21 @@ function renderDashMonthly(fd){
 }
 
 function renderDashFunnel(fd){
-  const open=fd.filter(d=>d.st==='open');
-  const vals=DASH_STGS.map(s=>({n:open.filter(d=>d.stg===s).length,v:open.filter(d=>d.stg===s).reduce((a,b)=>a+b.val,0)}));
-  mkD('dchFunnel',{type:'bar',data:{labels:DASH_STGS,datasets:[{label:'Deals',data:vals.map(x=>x.n),backgroundColor:DASH_STGS.map(s=>DASH_COL[s]),borderRadius:4}]},options:{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false},datalabels:{display:true,color:'#fff',anchor:'center',align:'center',font:{size:11,weight:'bold'}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT}},y:{grid:{display:false},ticks:{color:FONT,font:{size:11}}}}}});
+  /* Embudo BDM con nuevos stage names — solo pipelines BDM */
+  const BDM_F=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+  const BDM_F_COL=['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316'];
+  const open=fd.filter(d=>BDM_PIPES.has(d.pid)&&d.st==='open');
+  const vals=BDM_F.map(s=>open.filter(d=>d.stg===s).length);
+  mkD('dchFunnel',{type:'bar',data:{labels:BDM_F,datasets:[{label:'Deals',data:vals,backgroundColor:BDM_F_COL,borderRadius:4}]},options:{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false},datalabels:{display:true,color:'#fff',anchor:'center',align:'center',font:{size:11,weight:'bold'}}},scales:{x:{grid:{color:GRIDLINE},ticks:{color:FONT}},y:{grid:{display:false},ticks:{color:FONT,font:{size:11}}}}}});
 }
 
 function renderDashOwnerStage(fd){
-  const open=fd.filter(d=>d.st==='open');
+  const BDM_F=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+  const BDM_F_COL=['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316'];
+  const open=fd.filter(d=>BDM_PIPES.has(d.pid)&&d.st==='open');
   const owners=[...new Set(open.map(d=>d.own))].filter(Boolean).sort();
   if(!owners.length){document.getElementById('dchOwnerStage').getContext('2d');return;}
-  const stageCols=['#64748b','#3b82f6','#f59e0b','#8b5cf6','#22c55e'];
-  const datasets=DASH_STGS.map((s,i)=>({label:s,data:owners.map(o=>open.filter(d=>d.own===o&&d.stg===s).length),backgroundColor:stageCols[i],borderRadius:2,stack:'s'}));
+  const datasets=BDM_F.map((s,i)=>({label:s,data:owners.map(o=>open.filter(d=>d.own===o&&d.stg===s).length),backgroundColor:BDM_F_COL[i],borderRadius:2,stack:'s'}));
   mkD('dchOwnerStage',{type:'bar',data:{labels:owners.map(o=>o.split(' ')[0]),datasets},options:{...baseOpts(),scales:{x:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}},y:{stacked:true,grid:{color:GRIDLINE},ticks:{color:FONT}}},plugins:{...baseOpts().plugins,legend:{display:true,position:'top',labels:{color:FONT,boxWidth:12,font:{size:10}}}}}});
 }
 
@@ -2768,9 +2955,14 @@ function renderDashOwnerDeals(fd){
 }
 
 function renderDashStageDonut(fd){
-  const open=fd.filter(d=>d.st==='open');
-  const counts=DASH_STGS.map(s=>open.filter(d=>d.stg===s).length);
-  mkD('dchStageDonut',{type:'doughnut',data:{labels:DASH_STGS,datasets:[{data:counts,backgroundColor:DASH_STGS.map(s=>DASH_COL[s]),borderWidth:1,borderColor:'#ffffff'}]},options:{...baseOpts(),cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{color:FONT,font:{size:11},boxWidth:14}},datalabels:{display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,color:'#fff',font:{size:11,weight:'bold'},formatter:v=>v}}}});
+  const BDM_F=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado','Ganado','Perdido'];
+  const BDM_F_COL=['#64748b','#3b82f6','#06b6d4','#f59e0b','#8b5cf6','#f97316','#22c55e','#ef4444'];
+  const open=fd.filter(d=>BDM_PIPES.has(d.pid)&&d.st==='open');
+  const counts=BDM_F.map(s=>open.filter(d=>d.stg===s).length);
+  const nonZeroLabels=BDM_F.filter((_,i)=>counts[i]>0);
+  const nonZeroCounts=counts.filter(v=>v>0);
+  const nonZeroColors=BDM_F_COL.filter((_,i)=>counts[i]>0);
+  mkD('dchStageDonut',{type:'doughnut',data:{labels:nonZeroLabels,datasets:[{data:nonZeroCounts,backgroundColor:nonZeroColors,borderWidth:1,borderColor:'#ffffff'}]},options:{...baseOpts(),cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{color:FONT,font:{size:11},boxWidth:14}},datalabels:{display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,color:'#fff',font:{size:11,weight:'bold'},formatter:v=>v}}}});
 }
 
 function renderDashEmpresa(fd){
@@ -2801,15 +2993,17 @@ function renderDashTop(fd){
 }
 
 function renderDashOwnerAnalysis(fd){
-  const owners=[...new Set(fd.map(d=>d.own))].filter(Boolean).sort();
+  const BDM_F=['Prospecto','Contacto (GP)','Contacto (LUP)','Con tarea','Reunión','Presupuestado'];
+  const BDM_F_COL={'Prospecto':'#64748b','Contacto (GP)':'#3b82f6','Contacto (LUP)':'#06b6d4','Con tarea':'#f59e0b','Reunión':'#8b5cf6','Presupuestado':'#f97316'};
+  const owners=[...new Set(fd.filter(d=>BDM_PIPES.has(d.pid)).map(d=>d.own))].filter(Boolean).sort();
   const rows=owners.map(o=>{
-    const od=fd.filter(d=>d.own===o);
+    const od=fd.filter(d=>d.own===o&&BDM_PIPES.has(d.pid));
     const op=od.filter(d=>d.st==='open'),wn=od.filter(d=>d.st==='won'),ls=od.filter(d=>d.st==='lost');
     const wr=wn.length+ls.length>0?+(wn.length/(wn.length+ls.length)*100).toFixed(1):null;
     const wrCol=wr==null?'var(--mu)':wr>=25?'#22c55e':wr>=15?'#eab308':'#ef4444';
     const pv=op.reduce((s,d)=>s+d.val,0),wv=wn.reduce((s,d)=>s+d.val,0);
-    const sc={};DASH_STGS.forEach(s=>{sc[s]=op.filter(d=>d.stg===s).length;});
-    const stgBars=DASH_STGS.map(s=>`<span title="${s}:${sc[s]}" style="display:inline-flex;align-items:center;gap:3px;font-size:.7rem;color:${DASH_COL[s]}"><span style="width:8px;height:8px;border-radius:50%;background:${DASH_COL[s]};display:inline-block"></span>${sc[s]}</span>`).join(' ');
+    const sc={};BDM_F.forEach(s=>{sc[s]=op.filter(d=>d.stg===s).length;});
+    const stgBars=BDM_F.map(s=>`<span title="${s}:${sc[s]}" style="display:inline-flex;align-items:center;gap:3px;font-size:.7rem;color:${BDM_F_COL[s]}"><span style="width:8px;height:8px;border-radius:50%;background:${BDM_F_COL[s]};display:inline-block"></span>${sc[s]}</span>`).join(' ');
     return`<tr>
       <td style="font-weight:600">${o}</td>
       <td class="r" style="font-weight:700">${od.length}</td>
@@ -2890,6 +3084,591 @@ function renderDashTable(fd,page){
       <thead><tr><th>ID</th><th>Propietario</th><th>Empresa GP</th><th>Organización</th><th>Contacto</th><th>Título</th><th>Etapa</th><th>Pipeline</th><th>Etiqueta</th><th>Estado</th><th class="r">Valor</th><th>Creación</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>${nav}`;
+}
+
+/* ═══════════════════════════════════════════════
+   FARMING — CROSS-SELLING GP
+   Datos: CrossSelling_GP_Julio2026.xlsx
+   [cliente, totalFact, audisis, cap, supply, tradeMkt, ops, proventas, selPerm, nEmpr]
+   null = 🎯 oportunidad de cross-selling
+══════════════════════════════════════════════════ */
+const FARM_MATRIX=[
+  ["COCA COLA EMBONOR SA",1846883538,5990130,null,null,null,1840893408,null,null,2],
+  ["JOHNSON & JOHNSON CHILE SA",1356229382,3452000,null,null,null,1352777382,null,null,2],
+  ["CLOROX CHILE SA",921492676,9491178,null,492959,3686000,907822539,null,null,4],
+  ["MASTERFOODS CHILE ALIMENTOS LIMITADA",760038376,17939118,null,94416951,null,647682307,null,null,3],
+  ["BANCO SANTANDER-CHILE",717145408,1331268,null,22003710,693810430,null,null,null,3],
+  ["ADIDAS CHILE LIMITADA",712214293,11305542,null,null,null,700908751,null,null,2],
+  ["SIKA SA CHILE",681610324,3300000,null,null,null,678310324,null,null,2],
+  ["WOM SA",677961549,1983697,null,null,null,675977852,null,null,2],
+  ["PHILIPS CHILENA SA",661319088,2792780,null,1729600,null,656796708,null,null,3],
+  ["NUTRISCO CHILE SA",645822190,9531953,null,null,null,636290237,null,null,2],
+  ["MERCADO PAGO OPERADORA SA",595270055,9342000,null,2376995,255780849,null,318426774,9343437,5],
+  ["LABORATORIO DURANDIN SA",588903655,2000000,null,null,null,485989062,null,100914593,3],
+  ["IANSA ALIMENTOS SA",522528701,380000,null,925357,null,521223344,null,null,3],
+  ["CORPORACION ZTE DE CHILE SA",520757097,2643900,null,null,null,518113197,null,null,2],
+  ["AGROSUPER COMERCIALIZADORA DE ALIMENTOS LTDA",496463524,6574300,null,null,null,489889224,null,null,2],
+  ["COMERCIAL PEUMO LTDA",405628051,1370000,null,null,null,404258051,null,null,2],
+  ["JOHNSON & JOHNSON PERSONAL CARE CHILE SA",397833655,5960000,null,null,null,391873655,null,null,2],
+  ["ABBOTT LABORATORIES DE CHILE LTDA",387449430,6889036,null,null,null,380560394,null,null,2],
+  ["PERNOD RICARD CHILE SPA",386040162,4772338,null,null,null,381267824,null,null,2],
+  ["INDUSTRIAS CLEANER CHILE SA",384673700,7375139,null,null,null,377298561,null,null,2],
+  ["LENOVO AGENCIA EN CHILE",367487911,3105000,null,2763264,445990,356668765,null,4504892,5],
+  ["NESTLE CHILE SA",361435596,1275669,null,360159927,null,null,null,null,2],
+  ["SADIA CHILE SA",345052886,1275000,null,null,null,343777886,null,null,2],
+  ["ZHIGU CORPORATION LIMITED",322209446,null,null,null,null,null,null,322209446,1],
+  ["HENKEL CHILE LIMITADA",221665388,null,null,24098737,400000,null,null,197166651,3],
+  ["LOREAL CHILE SA",218893770,2915010,null,null,null,215978760,null,null,2],
+  ["RED BULL SPA",211639537,null,null,null,211639537,null,null,null,1],
+  ["EMBOTELLADORA ANDINA SA",207297638,null,null,null,null,null,null,207297638,1],
+  ["EMPRESA DE SERVICIOS EXTERNOS ASOCIACION CHILENA DE SEGURIDAD SA",202272620,null,null,null,null,null,null,202272620,1],
+  ["CERVECERIA CHILE SA",200901406,null,null,null,null,200901406,null,null,1],
+  ["SOFRUCO ALIMENTOS LTDA",178259020,406489,null,null,null,177852531,null,null,2],
+  ["CLARO CHILE SPA",165670229,3157277,null,null,null,null,162512952,null,2],
+  ["SUCDEN CHILE SPA",163282842,null,null,null,null,163282842,null,null,1],
+  ["AJECHILE SPA",156383372,null,null,null,35989873,117550499,null,2843000,3],
+  ["FALABELLA RETAIL SA",133330743,null,null,null,null,null,null,133330743,1],
+  ["ELECTRO ANDINA LTDA",112933031,400000,null,null,null,112533031,null,null,2],
+  ["JUEGOS DE VIDEO DE CHILE SPA",98632250,372670,null,null,null,98259580,null,null,2],
+  ["CEPAS CHILE SA",85859171,1672176,null,null,null,84186995,null,null,2],
+  ["ARTEL SA",83896582,12442921,null,null,null,71453661,null,null,2],
+  ["DURACELL PILAS LIMITADA",83828905,2935475,null,20472840,11082909,49337681,null,null,4],
+  ["TPV CHILE SPA",78870679,36000,null,null,null,15276851,null,63557827,3],
+  ["IMP,COMERC Y DIST ROYAL CANIN CHILE LTDA",77462873,2242010,null,null,75220863,null,null,null,2],
+  ["TESA TAPE CHILE SA",69175260,546990,null,null,261000,68367270,null,null,3],
+  ["ESSITY CHILE SA",59266140,81115,null,null,10660080,42637657,null,5887288,4],
+  ["ORGANISMO TECNICO INTERMEDIO PARA CAPACITACION DE LA SOFOFA",56930175,null,56930175,null,null,null,null,null,1],
+  ["JOHNSON & JOHNSON CHILE SA-VISION",51976233,2234973,null,null,null,49741260,null,null,2],
+  ["AGROVET SPA",37646857,null,null,null,37646857,null,null,null,1],
+  ["CÁMARA CHILENA DE LA CONSTRUCCIÓN AG",36718433,null,null,null,null,null,null,36718433,1],
+  ["VINILIT SA",31200825,938913,null,null,null,30261912,null,null,2],
+  ["ARTECOLA CHILE SA",31042880,160000,null,null,null,30882880,null,null,2],
+  ["BANCO DE CREDITO E INVERSIONES SA",30476099,null,null,null,null,null,30476099,null,1],
+  ["DIAGEO CHILE LIMITADA",23875604,null,null,null,23875604,null,null,null,1],
+  ["SOPROLE SA",22408425,null,null,22408425,null,null,null,null,1],
+  ["BSN MEDICAL SPA",17836614,null,null,null,null,null,null,17836614,1],
+  ["MAQUINARIAS THM SA",17562500,null,null,null,null,null,null,17562500,1],
+  ["GABRICA CHILE LTDA",17016908,null,null,4001654,3421900,null,null,9593354,3],
+  ["BANCO DEL ESTADO DE CHILE",16064530,null,null,null,181595,null,null,15882935,2],
+  ["CIA PESQUERA CAMANCHACA SA",15836606,null,null,null,null,null,null,15836606,1],
+  ["INABA FOODS CHILE SPA",15611490,null,null,null,15611490,null,null,null,1],
+  ["WENCO SA",14703733,1518900,null,null,null,13184833,null,null,2],
+  ["INDUSTRIA DE ALIMENTOS DOS EN UNO SA",14300589,null,null,null,null,null,null,14300589,1],
+  ["UNILEVER CHILE SA",13925145,null,null,13925145,null,null,null,null,1],
+  ["IMPORTADORA Y EXPORTADORA PANDORA & CO SPA",11940030,null,null,null,null,null,null,11940030,1],
+  ["FOSFOQUIM FUMIGACIONES SA",11284684,null,null,null,null,null,null,11284684,1],
+  ["AGRO CORTEVA CHILE SA",10750000,null,null,10750000,null,null,null,null,1],
+  ["CONSULTORA Y ADM DE RECURSOS HUMANOS LTDA",10102289,3743459,null,6358830,null,null,null,null,2],
+  ["MINERVA FOODS CHILE SPA",8105483,null,null,1762383,6343100,null,null,null,2],
+  ["CAPACITACIONES",7572750,null,7572750,null,null,null,null,null,1],
+  ["COMERCIAL CASTRO SA",6875000,null,null,null,null,null,null,6875000,1],
+  ["ESSBIO SA",6654000,null,null,null,null,null,null,6654000,1],
+  ["CONFECCIONES TOP SPA",6400000,6400000,null,null,null,null,null,null,1],
+  ["QUIMICA HEWSTONE SA",6205848,null,null,null,null,6205848,null,null,1],
+  ["COMERCIAL VASTUS SPA",6136102,null,null,null,null,6136102,null,null,1],
+  ["LEVADURAS COLLICO SA",5735984,null,null,null,null,5735984,null,null,1],
+  ["TECNIGEN SA",5638298,3009,null,null,null,5635289,null,null,2],
+  ["DISECOM SAC",5447115,5447115,null,null,null,null,null,null,1],
+  ["COMERCIALIZADORA SKECHERS CHILE LTDA",5000000,5000000,null,null,null,null,null,null,1],
+  ["COLUN LTDA",4920700,null,null,null,4920700,null,null,null,1],
+  ["KENVUE CHILE SA",4917875,null,null,4917875,null,null,null,null,1],
+  ["ROYAL CANIN COLOMBIA SAS",4744320,4744320,null,null,null,null,null,null,1],
+  ["FORUS SA",3090400,null,null,null,3090400,null,null,null,1],
+  ["SYMBORG CHILE SPA",2401920,null,null,2401920,null,null,null,null,1],
+  ["MUTUAL DE SEGURIDAD CAMARA CHILENA DE LA CONSTRUCCION",2300000,null,null,null,null,null,null,2300000,1],
+  ["TECNOPAPEL SA",1725000,null,null,null,null,null,null,1725000,1],
+  ["EQUIPOS TECNICOS Y DE COMUNICACIONES SA",1634354,null,null,null,null,null,null,1634354,1],
+  ["SOCOMED SPA",1625000,null,null,null,null,null,null,1625000,1],
+  ["SUPPLY CHAIN",1555684,1555684,null,null,null,null,null,null,1],
+  ["PRE UNIC SA",1326212,null,null,null,null,null,null,1326212,1],
+  ["FOTOGRAFICA FOTOMAR SA",1250000,null,null,null,null,null,null,1250000,1],
+  ["SOCIEDAD IMPORTADORA SOUTHERNKING LIMITADA",1000000,1000000,null,null,null,null,null,null,1],
+  ["UNIVERSIDAD DE LAS ARTES, CIENCIA Y COMUNICACIÓN UNIACC",963000,null,null,null,963000,null,null,null,1],
+  ["TYT MUEBLES Y JUGUETES LTDA",937500,null,null,null,null,null,null,937500,1],
+  ["SOCIEDAD OPERADORA DE TARJETAS DE PAGO SANTANDER GETNET CHILE SA",872855,null,null,872855,null,null,null,null,1],
+  ["RFLEX SPA",850000,null,null,null,null,null,null,850000,1],
+  ["SOCIEDAD BRAVO Y HERMANOS SPA",843750,null,null,null,null,null,null,843750,1],
+  ["TRADE MARKETING",800000,800000,null,null,null,null,null,null,1],
+  ["DISEÑO Y COMUNICACION SA",765855,765855,null,null,null,null,null,null,1],
+  ["SOCIEDAD COMERCIAL CRUZEIRO GOMAS LTDA",650000,null,null,null,null,null,null,650000,1],
+  ["SUR TRADING SPA",546000,null,null,null,546000,null,null,null,1],
+  ["PAYROLL",463624,463624,null,null,null,null,null,null,1],
+  ["MEDICAL TALENT LIMITADA",406801,303501,null,103300,null,null,null,null,2],
+  ["CORP DE CAPACITACION DE LA CAMARA NACIONAL DE COMERCIO DE CHILE",395600,null,395600,null,null,null,null,null,1],
+  ["EMRS SPA",378151,null,null,378151,null,null,null,null,1],
+  ["CONTROL DE PLAGAS Y SANITIZACION SPA",370000,null,null,370000,null,null,null,null,1],
+  ["ALIMENTOS DE MASCOTAS MAGGIE CARE SPA",350640,null,null,350640,null,null,null,null,1],
+  ["CORP DE CAPACITACION DE LA CONSTRUCCION",310340,null,310340,null,null,null,null,null,1],
+  ["COMERCIALIZADORA Y PRODUCTORA DE INSUMOS ECOFOS LTDA",199210,null,null,null,null,null,null,199210,1],
+  ["FOSFOQUIM SA",199210,null,null,null,null,null,null,199210,1],
+  ["FUMIGACIONES SINPLAGAS LTDA",75630,null,null,75630,null,null,null,null,1],
+  ["EMPRESA DE TRANSPORTE ABEGON LTDA",75630,null,null,75630,null,null,null,null,1],
+  ["PESTKILLER SPA",63754,null,null,63754,null,null,null,null,1],
+];
+
+/* [cliente, totalFact, nActivas, nOpor, activas, aProspectar] */
+const FARM_TOP=[
+  ["COCA COLA EMBONOR SA",1846883538,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["JOHNSON & JOHNSON CHILE SA",1356229382,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["CLOROX CHILE SA",921492676,4,3,"Audisis, Supply Chain, Trade Marketing, Operaciones","Capacitaciones, Proventas, Selección Permanent"],
+  ["MASTERFOODS CHILE ALIMENTOS LIMITADA",760038376,3,4,"Audisis, Supply Chain, Operaciones","Capacitaciones, Trade Marketing, Proventas, Selección Permanent"],
+  ["BANCO SANTANDER-CHILE",717145408,3,4,"Audisis, Supply Chain, Trade Marketing","Capacitaciones, Operaciones, Proventas, Selección Permanent"],
+  ["ADIDAS CHILE LIMITADA",712214293,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["SIKA SA CHILE",681610324,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["WOM SA",677961549,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["PHILIPS CHILENA SA",661319088,3,4,"Audisis, Supply Chain, Operaciones","Capacitaciones, Trade Marketing, Proventas, Selección Permanent"],
+  ["NUTRISCO CHILE SA",645822190,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["MERCADO PAGO OPERADORA SA",595270055,5,2,"Audisis, Supply Chain, Trade Marketing, Proventas, Selección Permanent","Capacitaciones, Operaciones"],
+  ["LABORATORIO DURANDIN SA",588903655,3,4,"Audisis, Operaciones, Selección Permanent","Capacitaciones, Supply Chain, Trade Marketing, Proventas"],
+  ["IANSA ALIMENTOS SA",522528701,3,4,"Audisis, Supply Chain, Operaciones","Capacitaciones, Trade Marketing, Proventas, Selección Permanent"],
+  ["CORPORACION ZTE DE CHILE SA",520757097,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["AGROSUPER COMERCIALIZADORA DE ALIMENTOS LTDA",496463524,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["COMERCIAL PEUMO LTDA",405628051,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["JOHNSON & JOHNSON PERSONAL CARE CHILE SA",397833655,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["ABBOTT LABORATORIES DE CHILE LTDA",387449430,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["PERNOD RICARD CHILE SPA",386040162,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["INDUSTRIAS CLEANER CHILE SA",384673700,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["LENOVO AGENCIA EN CHILE",367487911,5,2,"Audisis, Supply Chain, Trade Marketing, Operaciones, Selección Permanent","Capacitaciones, Proventas"],
+  ["NESTLE CHILE SA",361435596,2,5,"Audisis, Supply Chain","Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["SADIA CHILE SA",345052886,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["ZHIGU CORPORATION LIMITED",322209446,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["HENKEL CHILE LIMITADA",221665388,3,4,"Supply Chain, Trade Marketing, Selección Permanent","Audisis, Capacitaciones, Operaciones, Proventas"],
+  ["LOREAL CHILE SA",218893770,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["RED BULL SPA",211639537,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["EMBOTELLADORA ANDINA SA",207297638,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["EMPRESA DE SERVICIOS EXTERNOS ASOCIACION CHILENA DE SEGURIDAD SA",202272620,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["CERVECERIA CHILE SA",200901406,1,6,"Operaciones","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["SOFRUCO ALIMENTOS LTDA",178259020,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["CLARO CHILE SPA",165670229,2,5,"Audisis, Proventas","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Selección Permanent"],
+  ["SUCDEN CHILE SPA",163282842,1,6,"Operaciones","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["AJECHILE SPA",156383372,3,4,"Trade Marketing, Operaciones, Selección Permanent","Audisis, Capacitaciones, Supply Chain, Proventas"],
+  ["FALABELLA RETAIL SA",133330743,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["ELECTRO ANDINA LTDA",112933031,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["JUEGOS DE VIDEO DE CHILE SPA",98632250,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["CEPAS CHILE SA",85859171,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["ARTEL SA",83896582,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["DURACELL PILAS LIMITADA",83828905,4,3,"Audisis, Supply Chain, Trade Marketing, Operaciones","Capacitaciones, Proventas, Selección Permanent"],
+  ["TPV CHILE SPA",78870679,3,4,"Audisis, Operaciones, Selección Permanent","Capacitaciones, Supply Chain, Trade Marketing, Proventas"],
+  ["IMP,COMERC Y DIST ROYAL CANIN CHILE LTDA",77462873,2,5,"Audisis, Trade Marketing","Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["TESA TAPE CHILE SA",69175260,3,4,"Audisis, Trade Marketing, Operaciones","Capacitaciones, Supply Chain, Proventas, Selección Permanent"],
+  ["ESSITY CHILE SA",59266140,4,3,"Audisis, Trade Marketing, Operaciones, Selección Permanent","Capacitaciones, Supply Chain, Proventas"],
+  ["ORGANISMO TECNICO INTERMEDIO PARA CAPACITACION DE LA SOFOFA",56930175,1,6,"Capacitaciones","Audisis, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["JOHNSON & JOHNSON CHILE SA-VISION",51976233,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["AGROVET SPA",37646857,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["CÁMARA CHILENA DE LA CONSTRUCCIÓN AG",36718433,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["VINILIT SA",31200825,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["ARTECOLA CHILE SA",31042880,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["BANCO DE CREDITO E INVERSIONES SA",30476099,1,6,"Proventas","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Selección Permanent"],
+  ["DIAGEO CHILE LIMITADA",23875604,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["SOPROLE SA",22408425,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["BSN MEDICAL SPA",17836614,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["MAQUINARIAS THM SA",17562500,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["GABRICA CHILE LTDA",17016908,3,4,"Supply Chain, Trade Marketing, Selección Permanent","Audisis, Capacitaciones, Operaciones, Proventas"],
+  ["BANCO DEL ESTADO DE CHILE",16064530,2,5,"Trade Marketing, Selección Permanent","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas"],
+  ["CIA PESQUERA CAMANCHACA SA",15836606,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["INABA FOODS CHILE SPA",15611490,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["WENCO SA",14703733,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["INDUSTRIA DE ALIMENTOS DOS EN UNO SA",14300589,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["UNILEVER CHILE SA",13925145,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["IMPORTADORA Y EXPORTADORA PANDORA & CO SPA",11940030,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["FOSFOQUIM FUMIGACIONES SA",11284684,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["AGRO CORTEVA CHILE SA",10750000,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["CONSULTORA Y ADM DE RECURSOS HUMANOS LTDA",10102289,2,5,"Audisis, Supply Chain","Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["MINERVA FOODS CHILE SPA",8105483,2,5,"Supply Chain, Trade Marketing","Audisis, Capacitaciones, Operaciones, Proventas, Selección Permanent"],
+  ["CAPACITACIONES",7572750,1,6,"Capacitaciones","Audisis, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["COMERCIAL CASTRO SA",6875000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["ESSBIO SA",6654000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["CONFECCIONES TOP SPA",6400000,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["QUIMICA HEWSTONE SA",6205848,1,6,"Operaciones","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["COMERCIAL VASTUS SPA",6136102,1,6,"Operaciones","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["LEVADURAS COLLICO SA",5735984,1,6,"Operaciones","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["TECNIGEN SA",5638298,2,5,"Audisis, Operaciones","Capacitaciones, Supply Chain, Trade Marketing, Proventas, Selección Permanent"],
+  ["DISECOM SAC",5447115,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["COMERCIALIZADORA SKECHERS CHILE LTDA",5000000,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["COLUN LTDA",4920700,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["KENVUE CHILE SA",4917875,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["ROYAL CANIN COLOMBIA SAS",4744320,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["FORUS SA",3090400,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["SYMBORG CHILE SPA",2401920,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["MUTUAL DE SEGURIDAD CAMARA CHILENA DE LA CONSTRUCCION",2300000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["TECNOPAPEL SA",1725000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["EQUIPOS TECNICOS Y DE COMUNICACIONES SA",1634354,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["SOCOMED SPA",1625000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["SUPPLY CHAIN",1555684,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["PRE UNIC SA",1326212,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["FOTOGRAFICA FOTOMAR SA",1250000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["SOCIEDAD IMPORTADORA SOUTHERNKING LIMITADA",1000000,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["UNIVERSIDAD DE LAS ARTES, CIENCIA Y COMUNICACIÓN UNIACC",963000,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["TYT MUEBLES Y JUGUETES LTDA",937500,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["SOCIEDAD OPERADORA DE TARJETAS DE PAGO SANTANDER GETNET CHILE SA",872855,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["RFLEX SPA",850000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["SOCIEDAD BRAVO Y HERMANOS SPA",843750,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["TRADE MARKETING",800000,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["DISEÑO Y COMUNICACION SA",765855,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["SOCIEDAD COMERCIAL CRUZEIRO GOMAS LTDA",650000,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["SUR TRADING SPA",546000,1,6,"Trade Marketing","Audisis, Capacitaciones, Supply Chain, Operaciones, Proventas, Selección Permanent"],
+  ["PAYROLL",463624,1,6,"Audisis","Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["MEDICAL TALENT LIMITADA",406801,2,5,"Audisis, Supply Chain","Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["CORP DE CAPACITACION DE LA CAMARA NACIONAL DE COMERCIO DE CHILE",395600,1,6,"Capacitaciones","Audisis, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["EMRS SPA",378151,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["CONTROL DE PLAGAS Y SANITIZACION SPA",370000,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["ALIMENTOS DE MASCOTAS MAGGIE CARE SPA",350640,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["CORP DE CAPACITACION DE LA CONSTRUCCION",310340,1,6,"Capacitaciones","Audisis, Supply Chain, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["COMERCIALIZADORA Y PRODUCTORA DE INSUMOS ECOFOS LTDA",199210,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["FOSFOQUIM SA",199210,1,6,"Selección Permanent","Audisis, Capacitaciones, Supply Chain, Trade Marketing, Operaciones, Proventas"],
+  ["FUMIGACIONES SINPLAGAS LTDA",75630,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["EMPRESA DE TRANSPORTE ABEGON LTDA",75630,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+  ["PESTKILLER SPA",63754,1,6,"Supply Chain","Audisis, Capacitaciones, Trade Marketing, Operaciones, Proventas, Selección Permanent"],
+];
+
+function renderFarming(){
+  const el=document.getElementById('farmingContent');
+  if(!el)return;
+
+  const FARM_COLS=['Audisis','Capacitaciones','Supply Chain','Trade Marketing','Operaciones','Proventas','Selección Permanent'];
+  const FARM_CLR={'Audisis':'#06b6d4','Capacitaciones':'#8b5cf6','Supply Chain':'#f59e0b','Trade Marketing':'#ec4899','Operaciones':'#3b82f6','Proventas':'#22c55e','Selección Permanent':'#f97316'};
+  const FARM_SHT={'Audisis':'Audisis','Capacitaciones':'Capac.','Supply Chain':'Supply Ch.','Trade Marketing':'Trade MKT','Operaciones':'Operac.','Proventas':'Proven.','Selección Permanent':'Sel. Perm.'};
+
+  function clp(n){return n>=1e9?'$'+(n/1e9).toFixed(1)+'B':n>=1e6?'$'+(n/1e6).toFixed(1)+'M':n>=1e3?'$'+(n/1e3).toFixed(0)+'K':'$'+n;}
+  function clpFull(n){return '$'+(n||0).toLocaleString('es-CL');}
+  function oporClr(n){return n>=6?'#ef4444':n>=5?'#f97316':n>=4?'#eab308':n>=3?'#22c55e':'#64748b';}
+
+  // KPIs
+  const matrix=FARM_MATRIX.filter(r=>typeof r[1]==='number');
+  const top=FARM_TOP.filter(r=>typeof r[1]==='number');
+  const totalFact=matrix.reduce((s,r)=>s+(r[1]||0),0);
+  const totalOpor=top.reduce((s,r)=>s+(r[3]||0),0);
+  const highPrio=top.filter(r=>(r[3]||0)>=5).length;
+
+  function renderMatrix(q){
+    const filt=q?matrix.filter(r=>r[0].toUpperCase().includes(q.toUpperCase())):matrix;
+    if(!filt.length)return`<p style="color:var(--mu);padding:20px;text-align:center">Sin resultados para "${q}"</p>`;
+    const rows=filt.map((r,i)=>{
+      const cells=FARM_COLS.map((col,ci)=>{
+        const v=r[ci+2];
+        if(v===null)return`<td style="background:#fef3c780;text-align:center;padding:3px 5px;font-size:.9rem" title="${col}: Oportunidad cross-selling">🎯</td>`;
+        if(typeof v==='number'){const c=FARM_CLR[col];return`<td style="background:${c}1a;color:${c};font-size:.68rem;text-align:right;padding:3px 6px;font-weight:700;white-space:nowrap" title="${col}: ${clpFull(v)}">${clp(v)}</td>`;}
+        return`<td style="color:#cbd5e1;text-align:center;font-size:.75rem">—</td>`;
+      }).join('');
+      const bg=i%2===0?'var(--s1)':'var(--bg)';
+      return`<tr style="background:${bg}"><td style="font-size:.73rem;padding:4px 8px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r[0]}">${r[0]}</td><td style="text-align:right;font-size:.73rem;padding:4px 8px;font-weight:700;color:var(--tx);white-space:nowrap">${clp(r[1]||0)}</td>${cells}<td style="text-align:center;font-size:.78rem;font-weight:700;padding:4px 6px;color:${(r[9]||0)>=4?'#3b82f6':'var(--mu)'}">${r[9]||0}</td></tr>`;
+    }).join('');
+    return`<div style="overflow:auto;max-height:520px"><table style="width:100%;border-collapse:collapse;font-size:.73rem"><thead style="position:sticky;top:0;z-index:2"><tr style="background:var(--s2)"><th style="padding:6px 8px;text-align:left;border-bottom:2px solid var(--bd);white-space:nowrap">Cliente</th><th style="padding:6px 8px;text-align:right;border-bottom:2px solid var(--bd);white-space:nowrap">Total Fact.</th>${FARM_COLS.map(col=>`<th style="padding:6px 8px;text-align:center;border-bottom:2px solid var(--bd);white-space:nowrap;color:${FARM_CLR[col]}">${FARM_SHT[col]}</th>`).join('')}<th style="padding:6px 8px;text-align:center;border-bottom:2px solid var(--bd)"># GP</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function renderTop(minOpor){
+    const filt=minOpor>0?top.filter(r=>(r[3]||0)>=minOpor):top;
+    if(!filt.length)return`<p style="color:var(--mu);padding:20px;text-align:center">Sin clientes con ${minOpor}+ oportunidades</p>`;
+    const rows=filt.map((r,i)=>{
+      const clr=oporClr(r[3]||0);
+      const bg=i%2===0?'var(--s1)':'var(--bg)';
+      return`<tr style="background:${bg}"><td style="color:var(--mu);font-size:.7rem;text-align:center;padding:4px 6px">${i+1}</td><td style="font-size:.73rem;padding:4px 8px;font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[0]}">${r[0]}</td><td style="text-align:right;font-size:.73rem;padding:4px 8px;font-weight:700;white-space:nowrap">${clp(r[1]||0)}</td><td style="text-align:center;padding:4px 6px"><span style="background:#e0f2fe;color:#0369a1;border-radius:10px;padding:2px 8px;font-size:.7rem;font-weight:700">${r[2]||0}</span></td><td style="text-align:center;padding:4px 6px"><span style="background:${clr}22;color:${clr};border-radius:10px;padding:2px 10px;font-size:.7rem;font-weight:700">${r[3]||0}</span></td><td style="font-size:.68rem;padding:4px 8px;color:var(--tx)">${r[4]||'—'}</td><td style="font-size:.68rem;padding:4px 8px;color:#f97316">${r[5]||'—'}</td></tr>`;
+    }).join('');
+    return`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead style="position:sticky;top:0;z-index:2"><tr style="background:var(--s2)"><th style="padding:6px 8px;text-align:center;border-bottom:2px solid var(--bd)">#</th><th style="padding:6px 8px;text-align:left;border-bottom:2px solid var(--bd)">Cliente</th><th style="padding:6px 8px;text-align:right;border-bottom:2px solid var(--bd)">Total Fact.</th><th style="padding:6px 8px;text-align:center;border-bottom:2px solid var(--bd)">Empr. Activas</th><th style="padding:6px 8px;text-align:center;border-bottom:2px solid var(--bd)"># Oport.</th><th style="padding:6px 8px;text-align:left;border-bottom:2px solid var(--bd)">Servicios Activos</th><th style="padding:6px 8px;text-align:left;border-bottom:2px solid var(--bd)">A Prospectar</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <span style="font-size:2rem">🌾</span>
+      <div><h2 style="margin:0;font-size:1.05rem;font-weight:700">Farming — Cross-Selling Grupo Progestion</h2>
+      <span style="color:var(--mu);font-size:.76rem">Julio 2026 · ${matrix.length} clientes analizados</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+      <div class="card" style="padding:12px 14px"><div style="color:var(--mu);font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Facturación Total GP</div><div style="font-size:1.3rem;font-weight:700;margin-top:4px">${clp(totalFact)}</div></div>
+      <div class="card" style="padding:12px 14px"><div style="color:var(--mu);font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Clientes en Matriz</div><div style="font-size:1.3rem;font-weight:700;margin-top:4px">${matrix.length}</div></div>
+      <div class="card" style="padding:12px 14px"><div style="color:var(--mu);font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Total Oportunidades 🎯</div><div style="font-size:1.3rem;font-weight:700;margin-top:4px;color:#f97316">${totalOpor}</div></div>
+      <div class="card" style="padding:12px 14px"><div style="color:var(--mu);font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Alta Prioridad (≥5 opor.)</div><div style="font-size:1.3rem;font-weight:700;margin-top:4px;color:#ef4444">${highPrio}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="font-weight:700;font-size:.88rem">📊 Matriz Cross-Selling</div>
+        <input id="farmSearch" type="text" placeholder="Buscar cliente…"
+          oninput="document.getElementById('farmMtx').innerHTML=window._farmMatrix(this.value)"
+          style="border:1px solid var(--bd);border-radius:6px;padding:4px 10px;font-size:.76rem;background:var(--bg);color:var(--tx);width:190px">
+        <div style="margin-left:auto;display:flex;gap:6px;font-size:.68rem">
+          <span style="background:#3b82f61a;color:#3b82f6;padding:2px 8px;border-radius:8px;font-weight:600">$color = activo</span>
+          <span style="background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:8px;font-weight:600">🎯 = oportunidad</span>
+        </div>
+      </div>
+      <div id="farmMtx"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="font-weight:700;font-size:.88rem">🏆 Top Oportunidades de Cross-Selling</div>
+        <div style="margin-left:auto;display:flex;gap:5px">
+          <button class="sel" id="ftb0" onclick="window._farmSetTop(this,0)" style="font-size:.71rem;padding:3px 8px">Todos</button>
+          <button class="sel" id="ftb3" onclick="window._farmSetTop(this,3)" style="font-size:.71rem;padding:3px 8px">≥3</button>
+          <button class="sel" id="ftb5" onclick="window._farmSetTop(this,5)" style="font-size:.71rem;padding:3px 8px">≥5</button>
+          <button class="sel active" id="ftb6" onclick="window._farmSetTop(this,6)" style="font-size:.71rem;padding:3px 8px">= 6</button>
+        </div>
+      </div>
+      <div id="farmTop"></div>
+    </div>
+
+    <!-- ── ANÁLISIS DE OPORTUNIDADES ── -->
+    <div class="card" style="margin-top:14px">
+      <div style="font-weight:700;font-size:.88rem;margin-bottom:4px">💡 Análisis de Oportunidades — Plan de Acción</div>
+      <p style="color:var(--mu);font-size:.74rem;margin:0 0 14px">Priorización automática basada en facturación del cliente, confianza acumulada con GP y brecha de servicios no contratados.</p>
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:14px">
+        <button id="faT0" onclick="window._faTab(0)" style="padding:7px 16px;font-size:.76rem;font-weight:600;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;cursor:pointer;color:var(--tx);border-bottom-color:var(--ac)">Por empresa GP</button>
+        <button id="faT1" onclick="window._faTab(1)" style="padding:7px 16px;font-size:.76rem;font-weight:600;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;cursor:pointer;color:var(--mu)">Segmentos estratégicos</button>
+        <button id="faT2" onclick="window._faTab(2)" style="padding:7px 16px;font-size:.76rem;font-weight:600;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;cursor:pointer;color:var(--mu)">Ranking de potencial</button>
+      </div>
+      <div id="faP0"></div>
+      <div id="faP1" style="display:none"></div>
+      <div id="faP2" style="display:none"></div>
+    </div>
+  `;
+
+  /* ── Análisis helpers ── */
+  function buildAnalysis(){
+    // Compute per-GP stats
+    const gpStats=FARM_COLS.map((col,ci)=>{
+      const active=matrix.filter(r=>typeof r[ci+2]==='number');
+      const opps=matrix.filter(r=>r[ci+2]===null);
+      const activeRev=active.reduce((s,r)=>s+r[ci+2],0);
+      const avgRev=active.length?Math.round(activeRev/active.length):0;
+      // estRev = oportunidades × ticket promedio activo (estimado realista)
+      const estRev=opps.length*avgRev;
+      // Score = totalFact * (nGP+1) — favors big clients that already trust GP
+      const topOpps=[...opps].sort((a,b)=>b[1]*(b[9]+1)-a[1]*(a[9]+1)).slice(0,8);
+      return{col,ci,active:active.length,opps:opps.length,activeRev,estRev,avgRev,topOpps};
+    });
+
+    // Segments
+    const megaPoco=matrix.filter(r=>r[1]>=500000000&&r[9]<=2).sort((a,b)=>b[1]-a[1]);
+    const ancla=matrix.filter(r=>r[9]>=3&&r[9]<7).sort((a,b)=>b[1]-a[1]);
+    const altaConf=matrix.filter(r=>r[9]>=4).sort((a,b)=>b[1]-a[1]);
+
+    /* ── PANE 0: Por empresa GP ── */
+    let selectedGP=0;
+    function renderGPPane(){
+      const cards=gpStats.map((gs,i)=>{
+        const c=FARM_CLR[gs.col];
+        const pct=Math.round(gs.active/matrix.length*100);
+        const sel=i===selectedGP;
+        return`<div onclick="window._farmShowGP(${i})" style="
+          border:2px solid ${sel?c:c+'44'};border-radius:10px;padding:11px 12px;cursor:pointer;
+          background:${sel?c+'12':'var(--bg)'};transition:all .15s">
+          <div style="font-weight:700;font-size:.78rem;color:${c};margin-bottom:7px">${gs.col}</div>
+          <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:7px">
+            <div><div style="font-size:.62rem;color:var(--mu)">Activos</div><div style="font-size:1.05rem;font-weight:700">${gs.active}</div></div>
+            <div><div style="font-size:.62rem;color:var(--mu)">Oport.</div><div style="font-size:1.05rem;font-weight:700;color:#f97316">${gs.opps}</div></div>
+          </div>
+          <div style="background:var(--s2);border-radius:3px;height:3px;overflow:hidden;margin-bottom:5px">
+            <div style="width:${pct}%;height:100%;background:${c};border-radius:3px"></div>
+          </div>
+          <div style="font-size:.62rem;color:var(--mu)">Estimado (opps × avg ticket): ${clp(gs.estRev)}</div>
+        </div>`;
+      }).join('');
+
+      const gs=gpStats[selectedGP];
+      const c=FARM_CLR[gs.col];
+      const prospRows=gs.topOpps.map((r,i)=>{
+        const bg=i%2===0?'var(--s1)':'var(--bg)';
+        const trust=r[9]>=4?'🔥 Alta':r[9]>=3?'⭐ Media':'☁️ Baja';
+        return`<tr style="background:${bg}">
+          <td style="font-size:.7rem;padding:4px 6px;text-align:center;color:var(--mu)">${i+1}</td>
+          <td style="font-size:.73rem;padding:4px 8px;font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[0]}">${r[0]}</td>
+          <td style="text-align:right;font-size:.73rem;padding:4px 8px;font-weight:700;white-space:nowrap">${clp(r[1]||0)}</td>
+          <td style="text-align:center;padding:4px 6px"><span style="background:#e0f2fe;color:#0369a1;border-radius:8px;padding:1px 7px;font-size:.68rem;font-weight:700">${r[9]}</span></td>
+          <td style="font-size:.68rem;padding:4px 8px;color:#6d28d9">${trust}</td>
+          <td style="font-size:.68rem;padding:4px 8px;color:var(--mu)">Acercar a equipo ${gs.col} — ticket estimado ${clp(gs.avgRev)}</td>
+        </tr>`;
+      }).join('');
+
+      return`
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:14px">${cards}</div>
+        <div style="border:1px solid ${c}44;border-radius:10px;padding:12px;background:${c}08">
+          <div style="font-weight:700;font-size:.82rem;color:${c};margin-bottom:3px">Top prospectos para <span style="text-decoration:underline">${gs.col}</span></div>
+          <div style="font-size:.7rem;color:var(--mu);margin-bottom:10px">Ordenados por facturación × confianza acumulada en GP · Avg ticket activo: ${clp(gs.avgRev)}</div>
+          <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:${c}18">
+              <th style="padding:5px 6px;text-align:center;border-bottom:1px solid ${c}44;font-size:.68rem">#</th>
+              <th style="padding:5px 8px;text-align:left;border-bottom:1px solid ${c}44;font-size:.68rem">Cliente</th>
+              <th style="padding:5px 8px;text-align:right;border-bottom:1px solid ${c}44;font-size:.68rem">Total Fact.</th>
+              <th style="padding:5px 8px;text-align:center;border-bottom:1px solid ${c}44;font-size:.68rem">GP activas</th>
+              <th style="padding:5px 8px;text-align:center;border-bottom:1px solid ${c}44;font-size:.68rem">Confianza</th>
+              <th style="padding:5px 8px;text-align:left;border-bottom:1px solid ${c}44;font-size:.68rem">Acción sugerida</th>
+            </tr></thead>
+            <tbody>${prospRows}</tbody>
+          </table></div>
+        </div>`;
+    }
+    document.getElementById('faP0').innerHTML=renderGPPane();
+    window._farmShowGP=(i)=>{selectedGP=i;document.getElementById('faP0').innerHTML=renderGPPane();};
+
+    /* ── PANE 1: Segmentos estratégicos ── */
+    function segTable(rows, cols, label, clr){
+      const trs=rows.map((r,i)=>{
+        const bg=i%2===0?'var(--s1)':'var(--bg)';
+        return`<tr style="background:${bg}">${cols(r,i)}</tr>`;
+      }).join('');
+      return`<table style="width:100%;border-collapse:collapse;font-size:.73rem;margin-bottom:4px">
+        <thead><tr style="background:${clr}18">${label}</tr></thead><tbody>${trs}</tbody></table>`;
+    }
+    // Segment 1: Mega clientes poco aprovechados
+    const seg1=segTable(megaPoco,
+      (r,i)=>`<td style="padding:4px 6px;text-align:center;color:var(--mu)">${i+1}</td>
+               <td style="padding:4px 8px;font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[0]}">${r[0]}</td>
+               <td style="padding:4px 8px;text-align:right;font-weight:700">${clp(r[1]||0)}</td>
+               <td style="padding:4px 8px;text-align:center"><span style="background:#e0f2fe;color:#0369a1;border-radius:8px;padding:1px 7px;font-size:.68rem;font-weight:700">${r[9]} / 7</span></td>
+               <td style="padding:4px 8px;color:#dc2626;font-size:.68rem">⚡ Máxima prioridad — solo ${r[9]} empresa${r[9]===1?'':'s'} GP activa${r[9]===1?'':'s'}</td>`,
+      `<th style="padding:5px 6px;text-align:center;border-bottom:1px solid #ef444444;font-size:.68rem">#</th>
+       <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #ef444444;font-size:.68rem">Cliente</th>
+       <th style="padding:5px 8px;text-align:right;border-bottom:1px solid #ef444444;font-size:.68rem">Total Fact.</th>
+       <th style="padding:5px 8px;text-align:center;border-bottom:1px solid #ef444444;font-size:.68rem">GP Activas</th>
+       <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #ef444444;font-size:.68rem">Oportunidad</th>`,
+      '#ef4444');
+    // Segment 2: Clientes ancla (≥3 GP)
+    const seg2=segTable(ancla.slice(0,10),
+      (r,i)=>{
+        // Count remaining opps
+        const nOpps=FARM_COLS.filter((_,ci)=>r[ci+2]===null).length;
+        return`<td style="padding:4px 6px;text-align:center;color:var(--mu)">${i+1}</td>
+               <td style="padding:4px 8px;font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[0]}">${r[0]}</td>
+               <td style="padding:4px 8px;text-align:right;font-weight:700">${clp(r[1]||0)}</td>
+               <td style="padding:4px 8px;text-align:center"><span style="background:#e0f2fe;color:#0369a1;border-radius:8px;padding:1px 7px;font-size:.68rem;font-weight:700">${r[9]} / 7</span></td>
+               <td style="padding:4px 8px;text-align:center"><span style="background:#fef3c7;color:#b45309;border-radius:8px;padding:1px 7px;font-size:.68rem;font-weight:700">${nOpps} 🎯</span></td>
+               <td style="padding:4px 8px;color:#0369a1;font-size:.68rem">Relación establecida — aprovechar confianza para ampliar</td>`;
+      },
+      `<th style="padding:5px 6px;text-align:center;border-bottom:1px solid #0369a144;font-size:.68rem">#</th>
+       <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #0369a144;font-size:.68rem">Cliente</th>
+       <th style="padding:5px 8px;text-align:right;border-bottom:1px solid #0369a144;font-size:.68rem">Total Fact.</th>
+       <th style="padding:5px 8px;text-align:center;border-bottom:1px solid #0369a144;font-size:.68rem">GP Activas</th>
+       <th style="padding:5px 8px;text-align:center;border-bottom:1px solid #0369a144;font-size:.68rem">Oport. restantes</th>
+       <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #0369a144;font-size:.68rem">Estrategia</th>`,
+      '#0369a1');
+    // Segment 3: Muy integrados (≥4)
+    const seg3=segTable(altaConf,
+      (r,i)=>{
+        const servsActivos=FARM_COLS.filter((_,ci)=>typeof r[ci+2]==='number').join(', ');
+        const nOpps=FARM_COLS.filter((_,ci)=>r[ci+2]===null).length;
+        return`<td style="padding:4px 6px;text-align:center;color:var(--mu)">${i+1}</td>
+               <td style="padding:4px 8px;font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r[0]}">${r[0]}</td>
+               <td style="padding:4px 8px;text-align:right;font-weight:700">${clp(r[1]||0)}</td>
+               <td style="padding:4px 8px;font-size:.67rem;color:var(--mu)">${servsActivos}</td>
+               <td style="padding:4px 8px;text-align:center"><span style="background:#dcfce7;color:#166534;border-radius:8px;padding:1px 7px;font-size:.68rem;font-weight:700">${nOpps} restantes</span></td>`;
+      },
+      `<th style="padding:5px 6px;text-align:center;border-bottom:1px solid #22c55e44;font-size:.68rem">#</th>
+       <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #22c55e44;font-size:.68rem">Cliente</th>
+       <th style="padding:5px 8px;text-align:right;border-bottom:1px solid #22c55e44;font-size:.68rem">Total Fact.</th>
+       <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #22c55e44;font-size:.68rem">Servicios activos</th>
+       <th style="padding:5px 8px;text-align:center;border-bottom:1px solid #22c55e44;font-size:.68rem">Oport. restantes</th>`,
+      '#22c55e');
+
+    document.getElementById('faP1').innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+        <div class="card" style="padding:12px;border-left:3px solid #ef4444">
+          <div style="font-size:.72rem;color:#ef4444;font-weight:700;margin-bottom:2px">🚨 Mega clientes subaprovechados</div>
+          <div style="font-size:.68rem;color:var(--mu)">Fact. >$500M con solo 1-2 empresas GP activas — cada servicio nuevo representa 10x el ticket promedio</div>
+        </div>
+        <div class="card" style="padding:12px;border-left:3px solid #3b82f6">
+          <div style="font-size:.72rem;color:#3b82f6;font-weight:700;margin-bottom:2px">🤝 Clientes ancla (≥3 GP activas)</div>
+          <div style="font-size:.68rem;color:var(--mu)">Relación probada con GP — la barrera de entrada ya está superada, solo hay que conectar los equipos</div>
+        </div>
+        <div class="card" style="padding:12px;border-left:3px solid #22c55e">
+          <div style="font-size:.72rem;color:#22c55e;font-weight:700;margin-bottom:2px">🔗 Altamente integrados (≥4 GP activas)</div>
+          <div style="font-size:.68rem;color:var(--mu)">Clientes que ya confían en el ecosistema GP — fácil upsell de servicios complementarios</div>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:.78rem;font-weight:700;margin-bottom:8px;color:#ef4444">🚨 Mega clientes — prioridad máxima (${megaPoco.length} clientes)</div>
+        <div style="overflow-x:auto">${seg1}</div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:.78rem;font-weight:700;margin-bottom:8px;color:#3b82f6">🤝 Clientes con confianza establecida — top 10 (${ancla.length} total)</div>
+        <div style="overflow-x:auto">${seg2}</div>
+      </div>
+      <div>
+        <div style="font-size:.78rem;font-weight:700;margin-bottom:8px;color:#22c55e">🔗 Clientes altamente integrados con oportunidades (${altaConf.length} clientes)</div>
+        <div style="overflow-x:auto">${seg3}</div>
+      </div>`;
+
+    /* ── PANE 2: Ranking de potencial ── */
+    const ranked=[...gpStats].sort((a,b)=>b.estRev-a.estRev);
+    const maxEstRev=ranked[0].estRev;
+    const rankRows=ranked.map((gs,i)=>{
+      const c=FARM_CLR[gs.col];
+      const barW=Math.round(gs.estRev/maxEstRev*100);
+      const penetracion=Math.round(gs.active/matrix.length*100);
+      return`<tr style="${i%2===0?'background:var(--s1)':'background:var(--bg)'}">
+        <td style="padding:6px 8px;text-align:center;font-size:.75rem;font-weight:700;color:var(--mu)">${i+1}</td>
+        <td style="padding:6px 10px"><span style="color:${c};font-weight:700;font-size:.78rem">${gs.col}</span></td>
+        <td style="padding:6px 8px;text-align:center"><span style="background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px;font-size:.7rem;font-weight:700">${gs.active}</span></td>
+        <td style="padding:6px 8px;text-align:center"><span style="background:#fef3c7;color:#b45309;border-radius:8px;padding:2px 8px;font-size:.7rem;font-weight:700">${gs.opps}</span></td>
+        <td style="padding:6px 8px;text-align:center;font-size:.7rem;font-weight:600">${penetracion}%</td>
+        <td style="padding:6px 8px;text-align:right;font-size:.75rem;font-weight:700;color:var(--tx);white-space:nowrap">${clp(gs.estRev)}</td>
+        <td style="padding:6px 10px;min-width:160px">
+          <div style="background:var(--s2);border-radius:4px;height:8px;overflow:hidden">
+            <div style="width:${barW}%;height:100%;background:${c};border-radius:4px"></div>
+          </div>
+        </td>
+        <td style="padding:6px 8px;font-size:.68rem;color:var(--mu);white-space:nowrap">~${clp(gs.avgRev)} avg ticket</td>
+      </tr>`;
+    }).join('');
+    // Best opp summary
+    const best=ranked[0];
+    const bc=FARM_CLR[best.col];
+    document.getElementById('faP2').innerHTML=`
+      <div style="background:${bc}12;border:1px solid ${bc}44;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:.68rem;color:var(--mu);font-weight:600;text-transform:uppercase">Mayor potencial de revenue</div>
+          <div style="font-size:1.1rem;font-weight:700;color:${bc};margin-top:2px">${best.col}</div>
+          <div style="font-size:.72rem;color:var(--mu)">${best.opps} clientes por abordar · Estimado ${clp(best.estRev)} (${best.opps} × avg ${clp(best.avgRev)})</div>
+        </div>
+        <div style="border-left:1px solid var(--bd);padding-left:16px">
+          <div style="font-size:.68rem;color:var(--mu);font-weight:600;text-transform:uppercase">Empresa más penetrada</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#22c55e;margin-top:2px">Operaciones</div>
+          <div style="font-size:.72rem;color:var(--mu)">${gpStats.find(g=>g.col==='Operaciones').active} clientes activos · $14.3B revenue activo</div>
+        </div>
+        <div style="border-left:1px solid var(--bd);padding-left:16px">
+          <div style="font-size:.68rem;color:var(--mu);font-weight:600;text-transform:uppercase">Menor penetración</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#ef4444;margin-top:2px">Proventas</div>
+          <div style="font-size:.72rem;color:var(--mu)">Solo 3 clientes activos · Estimado ${clp(gpStats.find(g=>g.col==='Proventas').estRev)} (108 × avg ${clp(gpStats.find(g=>g.col==='Proventas').avgRev)})</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--s2)">
+          <th style="padding:7px 8px;text-align:center;border-bottom:2px solid var(--bd);font-size:.7rem">#</th>
+          <th style="padding:7px 10px;text-align:left;border-bottom:2px solid var(--bd);font-size:.7rem">Empresa GP</th>
+          <th style="padding:7px 8px;text-align:center;border-bottom:2px solid var(--bd);font-size:.7rem">Activos</th>
+          <th style="padding:7px 8px;text-align:center;border-bottom:2px solid var(--bd);font-size:.7rem">Oportunidades</th>
+          <th style="padding:7px 8px;text-align:center;border-bottom:2px solid var(--bd);font-size:.7rem">Penetración</th>
+          <th style="padding:7px 8px;text-align:right;border-bottom:2px solid var(--bd);font-size:.7rem">Rev. estimado (opps × avg ticket)</th>
+          <th style="padding:7px 10px;text-align:left;border-bottom:2px solid var(--bd);font-size:.7rem">Oportunidad relativa</th>
+          <th style="padding:7px 8px;text-align:left;border-bottom:2px solid var(--bd);font-size:.7rem">Ticket promedio</th>
+        </tr></thead>
+        <tbody>${rankRows}</tbody>
+      </table></div>`;
+  }
+
+  /* ── Tab switching ── */
+  window._faTab=(n)=>{
+    [0,1,2].forEach(i=>{
+      const p=document.getElementById('faP'+i);
+      const t=document.getElementById('faT'+i);
+      if(p)p.style.display=i===n?'':'none';
+      if(t){t.style.color=i===n?'var(--tx)':'var(--mu)';t.style.borderBottomColor=i===n?'var(--ac)':'transparent';}
+    });
+  };
+
+  // Expose helpers for inline events
+  window._farmMatrix=(q)=>renderMatrix(q);
+  window._farmSetTop=(btn,n)=>{
+    ['ftb0','ftb3','ftb5','ftb6'].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.remove('active');});
+    btn.classList.add('active');
+    document.getElementById('farmTop').innerHTML=renderTop(n);
+  };
+
+  // Initial render
+  document.getElementById('farmMtx').innerHTML=renderMatrix('');
+  document.getElementById('farmTop').innerHTML=renderTop(6);
+  buildAnalysis();
 }
 
 </script>
